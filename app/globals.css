@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+/* Les icônes natives des champs date/heure sont noires : invisibles sur fond
+   sombre. On les inverse pour qu'on voie qu'il y a un sélecteur à ouvrir. */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Barre de défilement horizontale des colonnes de la Life Map.
+   Firefox utilise scrollbar-width/color, les navigateurs WebKit les
+   pseudo-éléments : il faut les deux pour couvrir tout le monde. */
+.defilement-listes {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(13, 148, 136, 0.6) rgba(255, 255, 255, 0.04);
+}
+
+.defilement-listes::-webkit-scrollbar {
+  height: 10px;
+}
+
+.defilement-listes::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 9999px;
+}
+
+.defilement-listes::-webkit-scrollbar-thumb {
+  background: rgba(13, 148, 136, 0.6);
+  border-radius: 9999px;
+}
+
+.defilement-listes::-webkit-scrollbar-thumb:hover {
+  background: rgba(13, 148, 136, 0.9);
+}

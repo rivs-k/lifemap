@@ -1,0 +1,21 @@
+# dépendances
+/node_modules
+
+# build Next.js
+/.next
+/out
+
+# variables d'environnement (clés Supabase) — ne JAMAIS committer
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+npm-debug.log*
+
+# divers
+.DS_Store
+
+# captures et traces Playwright
+.playwright-mcp/
