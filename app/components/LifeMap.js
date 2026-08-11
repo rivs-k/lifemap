@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useLangue } from "./LangueProvider";
 import IconeDossier from "./IconeDossier";
-import AssistantObjectif from "./AssistantObjectif";
 import { calculerSerie, estFaitMaintenant } from "../lib/periodes";
 import { basculerCompletion } from "../lib/completions";
 
@@ -34,10 +33,6 @@ const COULEUR_TYPE = {
   mensuel: "#d55181",
   unique: "#c98500",
 };
-
-// Couleurs proposées aux nouvelles listes, piochées à tour de rôle.
-// Dérivée de COULEUR_TYPE pour n'avoir qu'une seule définition des teintes.
-const PALETTE = Object.values(COULEUR_TYPE);
 
 // Texte cliquable qui devient un champ de saisie : Entrée/clic-ailleurs valide,
 // Échap annule. Ne déclenche pas le glisser-déposer du parent.
@@ -289,6 +284,12 @@ function LigneObjectif({
             </span>
           )}
 
+          {objectif.objectif_communautaire_id && (
+            <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded shrink-0 text-teal-500 bg-teal-500/10 border border-teal-500/30">
+              {t.dashboard.objectifRejoint}
+            </span>
+          )}
+
           {tronque && (
             <button
               type="button"
@@ -340,10 +341,11 @@ export default function LifeMap({
   setListes,
   setObjectifs,
   setCompletions,
+  ajouterListe,
+  ajouterPlusieursObjectifs,
 }) {
   const { t } = useLangue();
   const [survolee, setSurvolee] = useState(null); // liste survolée pendant un drag
-  const [assistantOuvert, setAssistantOuvert] = useState(false);
   const refDefilement = useRef(null);
 
   // Molette verticale → défilement horizontal des colonnes.
@@ -395,19 +397,6 @@ export default function LifeMap({
   // ── Écritures : chaque action met à jour la base ET l'état local, pour que
   //    l'interface réagisse sans attendre un rechargement ──
 
-  async function ajouterListe(titre) {
-    const couleur = PALETTE[listes.length % PALETTE.length];
-    const { data } = await supabase
-      .from("listes")
-      .insert({ user_id: userId, titre, couleur, position: listes.length })
-      .select()
-      .single();
-    if (data) setListes((l) => [...l, data]);
-    // Renvoyé pour l'assistant IA : il crée la liste puis y ajoute aussitôt
-    // les objectifs générés, avant que `listes` n'ait eu le temps de se mettre à jour.
-    return data?.id;
-  }
-
   async function renommerListe(id, titre) {
     setListes((l) => l.map((x) => (x.id === id ? { ...x, titre } : x)));
     await supabase.from("listes").update({ titre }).eq("id", id);
@@ -429,23 +418,6 @@ export default function LifeMap({
       .select()
       .single();
     if (data) setObjectifs((o) => [...o, data]);
-  }
-
-  // Insertion groupée (assistant IA) : les positions sont calculées une seule
-  // fois puis incrémentées localement, plutôt que d'appeler `ajouterObjectif`
-  // en boucle — celui-ci relit `objectifs` à chaque appel, qui ne se met à
-  // jour qu'au prochain rendu, et donnerait donc la même position à tous.
-  async function ajouterPlusieursObjectifs(listeId, items) {
-    const debut = objectifsDe(listeId).length;
-    const lignes = items.map((it, i) => ({
-      user_id: userId,
-      liste_id: listeId,
-      nom: it.nom,
-      type: it.type || null,
-      position: debut + i,
-    }));
-    const { data } = await supabase.from("objectifs").insert(lignes).select();
-    if (data) setObjectifs((o) => [...o, ...data]);
   }
 
   async function renommerObjectif(id, nom) {
@@ -523,25 +495,7 @@ export default function LifeMap({
 
   return (
     <section className="mt-8">
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="font-bold text-xl">{t.dashboard.lifeMap}</h2>
-        <button
-          type="button"
-          onClick={() => setAssistantOuvert(true)}
-          className="flex items-center gap-1.5 text-sm font-bold border border-gray-700 hover:border-teal-500 transition rounded-full px-4 py-1.5 focus:outline-none focus-visible:border-teal-500"
-        >
-          <span aria-hidden="true">✨</span> {t.assistantIa.bouton}
-        </button>
-      </div>
-
-      {assistantOuvert && (
-        <AssistantObjectif
-          listes={listesTriees()}
-          onAjouterListe={ajouterListe}
-          onAjouterObjectifs={ajouterPlusieursObjectifs}
-          onFermer={() => setAssistantOuvert(false)}
-        />
-      )}
+      <h2 className="font-bold text-xl mb-5">{t.dashboard.lifeMap}</h2>
 
       {/* Mobile : listes empilées, on fait défiler la page verticalement.
           À partir de md : colonnes côte à côte avec défilement horizontal.

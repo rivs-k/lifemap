@@ -8,9 +8,14 @@ import JaugeCirculaire from "../components/JaugeCirculaire";
 import LifeMap from "../components/LifeMap";
 import AFaire from "../components/AFaire";
 import ChampTexte from "../components/ChampTexte";
+import AssistantObjectif from "../components/AssistantObjectif";
 import { useLangue } from "../components/LangueProvider";
 import { periodeCourante, serieJoursComplets, estFaitMaintenant } from "../lib/periodes";
 import { calculerXp, niveauDepuisXp } from "../lib/points";
+
+// Couleurs proposées aux nouvelles listes, piochées à tour de rôle — mêmes
+// teintes que celles des types d'objectifs dans la Life Map.
+const PALETTE_LISTES = ["#0d9488", "#9085e9", "#d55181", "#c98500"];
 
 function depuisCle(k) {
   const [a, m, j] = k.split("-").map(Number);
@@ -78,6 +83,7 @@ export default function Dashboard() {
   // qu'il n'en a pas choisi un.
   const [pseudoManquant, setPseudoManquant] = useState(false);
   const [enregistrementPseudo, setEnregistrementPseudo] = useState(false);
+  const [assistantOuvert, setAssistantOuvert] = useState(false);
 
   useEffect(() => {
     async function charger() {
@@ -134,6 +140,35 @@ export default function Dashboard() {
     setPseudo(v);
     setPseudoManquant(false);
     setEnregistrementPseudo(false);
+  }
+
+  // Déplacées ici (plutôt que dans LifeMap) car le bouton de l'assistant IA
+  // vit à côté du « Bonjour » ; LifeMap les reçoit en props comme le reste
+  // de son état.
+  async function ajouterListe(titre) {
+    const couleur = PALETTE_LISTES[listes.length % PALETTE_LISTES.length];
+    const { data } = await supabase
+      .from("listes")
+      .insert({ user_id: userId, titre, couleur, position: listes.length })
+      .select()
+      .single();
+    if (data) setListes((l) => [...l, data]);
+    // Renvoyé pour l'assistant IA : il crée la liste puis y ajoute aussitôt
+    // les objectifs générés, avant que `listes` n'ait eu le temps de se mettre à jour.
+    return data?.id;
+  }
+
+  async function ajouterPlusieursObjectifs(listeId, items) {
+    const debut = objectifs.filter((o) => o.liste_id === listeId).length;
+    const lignes = items.map((it, i) => ({
+      user_id: userId,
+      liste_id: listeId,
+      nom: it.nom,
+      type: it.type || null,
+      position: debut + i,
+    }));
+    const { data } = await supabase.from("objectifs").insert(lignes).select();
+    if (data) setObjectifs((o) => [...o, ...data]);
   }
 
   if (chargement) {
@@ -409,13 +444,31 @@ export default function Dashboard() {
       <NavbarApp pseudo={pseudo} avatarUrl={avatarUrl} niveau={niveau} />
 
       <main className="max-w-[120rem] mx-auto px-[19px] md:px-[88px] py-10 text-white">
-        <h1
-          style={{ fontFamily: "var(--font-oswald)" }}
-          className="text-3xl md:text-4xl font-bold"
-        >
-          {t.dashboard.bonjour}, {pseudo}
-        </h1>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h1
+            style={{ fontFamily: "var(--font-oswald)" }}
+            className="text-3xl md:text-4xl font-bold"
+          >
+            {t.dashboard.bonjour}, {pseudo}
+          </h1>
+          <button
+            type="button"
+            onClick={() => setAssistantOuvert(true)}
+            className="flex items-center gap-2 text-sm md:text-base font-bold bg-teal-700 hover:bg-teal-600 hover:scale-105 transition text-white rounded-full px-5 py-2.5 md:px-6 md:py-3 shadow-lg shadow-black/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+          >
+            <span aria-hidden="true">✨</span> {t.assistantIa.bouton}
+          </button>
+        </div>
         <p className="mt-2 text-gray-400">{t.dashboard.sousTitre}</p>
+
+        {assistantOuvert && (
+          <AssistantObjectif
+            listes={[...listes].sort((a, b) => a.position - b.position)}
+            onAjouterListe={ajouterListe}
+            onAjouterObjectifs={ajouterPlusieursObjectifs}
+            onFermer={() => setAssistantOuvert(false)}
+          />
+        )}
 
         {/* Bandeau du haut : les cartes résumé et le panneau « à faire ».
             L'ordre des quatre est libre, il est porté par la propriété CSS
@@ -490,6 +543,8 @@ export default function Dashboard() {
           setListes={setListes}
           setObjectifs={setObjectifs}
           setCompletions={setCompletions}
+          ajouterListe={ajouterListe}
+          ajouterPlusieursObjectifs={ajouterPlusieursObjectifs}
         />
       </main>
     </>

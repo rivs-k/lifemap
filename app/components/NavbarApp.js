@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useLangue } from "./LangueProvider";
 import SelecteurLangue from "./SelecteurLangue";
@@ -28,12 +29,11 @@ export default function NavbarApp({ pseudo, avatarUrl, niveau }) {
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <SelecteurLangue />
 
-          {/* Le mot « LIFEMAP » est masqué sur petit écran, l'icône suffit */}
           <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
-            <span aria-hidden="true" className="text-lg sm:text-2xl">🧭</span>
+            <Image src="/logo-icon.png" alt="" width={32} height={32} className="h-7 w-7 sm:h-8 sm:w-8" priority />
             <span
               style={{ fontFamily: "var(--font-oswald)" }}
-              className="hidden lg:inline text-xl font-bold tracking-wide"
+              className="text-lg sm:text-xl font-bold tracking-wide"
             >
               LIFEMAP
             </span>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import SelecteurLangue from "./SelecteurLangue";
 import { useLangue } from "./LangueProvider";
@@ -15,7 +16,12 @@ export default function Navbar() {
 
   return (
     <header className="fixed top-0 w-full flex justify-between items-center px-8 py-6 z-20">
-      <SelecteurLangue />
+      <div className="flex items-center gap-3">
+        <Link href="/" className="flex items-center">
+          <Image src="/logo-icon.png" alt="" width={32} height={32} className="h-8 w-8" priority />
+        </Link>
+        <SelecteurLangue />
+      </div>
       <div className="flex gap-3">
         <Link
           href="/connexion"

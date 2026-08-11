@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useLangue } from "./components/LangueProvider";
 
 export default function Home() {
@@ -10,9 +11,17 @@ export default function Home() {
     <main className="text-white">
       {/* HERO */}
       <section className="min-h-screen flex flex-col items-center justify-center text-center px-6">
+        <Image
+          src="/logo-icon.png"
+          alt=""
+          width={160}
+          height={160}
+          className="h-24 w-24 md:h-40 md:w-40"
+          priority
+        />
         <h1
           style={{ fontFamily: "var(--font-oswald)" }}
-          className="text-7xl md:text-9xl font-bold text-teal-500 tracking-wide"
+          className="mt-4 text-7xl md:text-9xl font-bold text-teal-500 tracking-wide"
         >
           LIFEMAP
         </h1>

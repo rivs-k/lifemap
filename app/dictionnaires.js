@@ -135,9 +135,10 @@ export const textes = {
       renommer: "Renommer",
       voirPlus: "Voir plus",
       voirMoins: "Voir moins",
+      objectifRejoint: "Objectif rejoint",
     },
     assistantIa: {
-      bouton: "Décomposer avec l’IA",
+      bouton: "Définir mes objectifs avec l’IA",
       titre: "Décomposer un objectif",
       intro:
         "Décris un objectif large : l’IA propose des sous-objectifs concrets à ajouter à ta Life Map.",
@@ -346,9 +347,10 @@ export const textes = {
       renommer: "Rename",
       voirPlus: "Show more",
       voirMoins: "Show less",
+      objectifRejoint: "Joined goal",
     },
     assistantIa: {
-      bouton: "Break down with AI",
+      bouton: "Define my goals with AI",
       titre: "Break down a goal",
       intro:
         "Describe a broad goal: the AI suggests concrete sub-goals to add to your Life Map.",
