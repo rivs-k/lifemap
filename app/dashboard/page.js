@@ -12,10 +12,8 @@ import AssistantObjectif from "../components/AssistantObjectif";
 import { useLangue } from "../components/LangueProvider";
 import { periodeCourante, serieJoursComplets, estFaitMaintenant } from "../lib/periodes";
 import { calculerXp, niveauDepuisXp } from "../lib/points";
-
-// Couleurs proposées aux nouvelles listes, piochées à tour de rôle — mêmes
-// teintes que celles des types d'objectifs dans la Life Map.
-const PALETTE_LISTES = ["#0d9488", "#9085e9", "#d55181", "#c98500"];
+import { PALETTE } from "../lib/couleurs";
+import { parPosition } from "../lib/position";
 
 function depuisCle(k) {
   const [a, m, j] = k.split("-").map(Number);
@@ -146,7 +144,7 @@ export default function Dashboard() {
   // vit à côté du « Bonjour » ; LifeMap les reçoit en props comme le reste
   // de son état.
   async function ajouterListe(titre) {
-    const couleur = PALETTE_LISTES[listes.length % PALETTE_LISTES.length];
+    const couleur = PALETTE[listes.length % PALETTE.length];
     const { data } = await supabase
       .from("listes")
       .insert({ user_id: userId, titre, couleur, position: listes.length })
@@ -463,7 +461,7 @@ export default function Dashboard() {
 
         {assistantOuvert && (
           <AssistantObjectif
-            listes={[...listes].sort((a, b) => a.position - b.position)}
+            listes={[...listes].sort(parPosition)}
             onAjouterListe={ajouterListe}
             onAjouterObjectifs={ajouterPlusieursObjectifs}
             onFermer={() => setAssistantOuvert(false)}
@@ -544,7 +542,6 @@ export default function Dashboard() {
           setObjectifs={setObjectifs}
           setCompletions={setCompletions}
           ajouterListe={ajouterListe}
-          ajouterPlusieursObjectifs={ajouterPlusieursObjectifs}
         />
       </main>
     </>

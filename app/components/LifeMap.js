@@ -6,6 +6,8 @@ import { useLangue } from "./LangueProvider";
 import IconeDossier from "./IconeDossier";
 import { calculerSerie, estFaitMaintenant } from "../lib/periodes";
 import { basculerCompletion } from "../lib/completions";
+import { COULEUR_TYPE } from "../lib/couleurs";
+import { parPosition } from "../lib/position";
 
 // Les choix du menu déroulant, dans l'ordre. La chaîne vide = « sans type » :
 // une tâche qu'on coche une fois, sans remise à zéro ni série. Elle est en tête
@@ -22,17 +24,6 @@ const TYPE_LISTE = "application/x-liste";
 function estGlissementDeListe(e) {
   return Array.from(e.dataTransfer.types).includes(TYPE_LISTE);
 }
-
-// Couleur associée à chaque type — identiques à celles de la carte « objectifs
-// terminés », pour qu'on fasse le lien entre le tableau et les statistiques.
-// Le libellé écrit reste l'information principale : la couleur ne fait que la
-// renforcer (elle seule serait illisible pour un daltonien).
-const COULEUR_TYPE = {
-  quotidien: "#0d9488",
-  hebdomadaire: "#9085e9",
-  mensuel: "#d55181",
-  unique: "#c98500",
-};
 
 // Texte cliquable qui devient un champ de saisie : Entrée/clic-ailleurs valide,
 // Échap annule. Ne déclenche pas le glisser-déposer du parent.
@@ -342,7 +333,6 @@ export default function LifeMap({
   setObjectifs,
   setCompletions,
   ajouterListe,
-  ajouterPlusieursObjectifs,
 }) {
   const { t } = useLangue();
   const [survolee, setSurvolee] = useState(null); // liste survolée pendant un drag
@@ -384,14 +374,12 @@ export default function LifeMap({
   // Les colonnes dans l'ordre choisi par l'utilisateur (copie : le tri se fait
   // en place, on ne veut pas modifier la prop reçue).
   function listesTriees() {
-    return [...listes].sort((a, b) => a.position - b.position);
+    return [...listes].sort(parPosition);
   }
 
   // Les objectifs d'une liste, dans l'ordre choisi par l'utilisateur.
   function objectifsDe(listeId) {
-    return objectifs
-      .filter((o) => o.liste_id === listeId)
-      .sort((a, b) => a.position - b.position);
+    return objectifs.filter((o) => o.liste_id === listeId).sort(parPosition);
   }
 
   // ── Écritures : chaque action met à jour la base ET l'état local, pour que
