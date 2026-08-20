@@ -4,23 +4,15 @@ import { useLangue } from "./LangueProvider";
 import { estFaitMaintenant } from "../lib/periodes";
 import { basculerCompletion } from "../lib/completions";
 
-// Le quotidien passe en premier : c'est ce qui doit être fait aujourd'hui,
-// alors qu'un mensuel peut attendre. Les objectifs sans type ferment la marche :
-// rien n'oblige à les faire aujourd'hui.
+// Le quotidien passe en premier (à faire aujourd'hui), les objectifs sans type
+// ferment la marche. `?? 4` : sans type, en dernier.
 const ORDRE_TYPES = { quotidien: 0, hebdomadaire: 1, mensuel: 2, unique: 3 };
 const rang = (type) => ORDRE_TYPES[type] ?? 4;
 
-// Panneau « À faire aujourd'hui » : les objectifs non encore validés pour leur
-// période en cours, cochables directement depuis le dashboard.
-//
-// Il partage l'état du dashboard (objectifs, completions) avec la Life Map :
-// cocher ici met à jour le donut, les compteurs et le tableau en dessous.
-//
-// `poignee` : les attributs de glisser-déposer, posés sur l'en-tête et non sur
-// le panneau entier. Comme pour les colonnes de la Life Map, on ne rend pas
-// glissable une zone qui contient des cases à cocher et une liste qui défile —
-// attraper le panneau y déclenchait un clic ou un défilement, pas un
-// déplacement.
+// Panneau « À faire aujourd'hui » : objectifs non validés pour leur période,
+// cochables depuis le dashboard ; partage l'état (objectifs, completions) avec
+// la Life Map. `poignee` : attributs de drag posés sur l'en-tête seul (pas le
+// panneau, qui contient cases à cocher et liste défilante).
 export default function AFaire({ userId, objectifs, completions, setCompletions, poignee }) {
   const { t } = useLangue();
 
@@ -52,8 +44,7 @@ export default function AFaire({ userId, objectifs, completions, setCompletions,
           {t.dashboard.toutFait}
         </p>
       ) : (
-        // Hauteur plafonnée + défilement : sans ça, une longue liste étirerait
-        // toute la rangée et les cartes voisines se retrouveraient à moitié vides.
+        // Hauteur plafonnée + défilement : sinon une longue liste étirerait la rangée.
         <ul className="mt-2 flex flex-col gap-1.5 max-h-[7.5rem] overflow-y-auto defilement-listes pr-1">
           {restants.map((objectif) => (
             <li key={objectif.id} className="flex items-center gap-2">

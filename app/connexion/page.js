@@ -27,10 +27,7 @@ export default function Connexion() {
     });
 
     setChargement(false);
-    if (error) {
-      setErreur(messageErreurAuth(error, t));
-      return;
-    }
+    if (error) return setErreur(messageErreurAuth(error, t));
     router.push("/dashboard");
   }
 

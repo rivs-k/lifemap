@@ -9,32 +9,23 @@ import { basculerCompletion } from "../lib/completions";
 import { COULEUR_TYPE } from "../lib/couleurs";
 import { parPosition } from "../lib/position";
 
-// Les choix du menu déroulant, dans l'ordre. La chaîne vide = « sans type » :
-// une tâche qu'on coche une fois, sans remise à zéro ni série. Elle est en tête
-// et sélectionnée par défaut — mettre une étiquette doit rester un choix.
+// Choix du menu déroulant, dans l'ordre. La chaîne vide = « sans type » (coché
+// une fois, sans remise à zéro ni série), en tête et sélectionné par défaut.
 const TYPES = ["", "quotidien", "hebdomadaire", "mensuel", "unique"];
 
-// Type de données transporté quand on glisse une COLONNE. Les objectifs, eux,
-// utilisent "text/plain" : c'est ce qui permet de ne pas confondre les deux.
+// Type transporté quand on glisse une COLONNE ; les objectifs utilisent
+// "text/plain". C'est ce qui permet de ne pas confondre les deux.
 const TYPE_LISTE = "application/x-liste";
 
-// Pendant un survol, le navigateur masque le CONTENU du presse-papiers de glisser
-// (getData renvoie ""), mais laisse lire la liste des types. C'est donc le seul
-// moyen de savoir « est-ce une colonne ? » avant le dépôt.
-function estGlissementDeListe(e) {
-  return Array.from(e.dataTransfer.types).includes(TYPE_LISTE);
-}
+// Pendant un survol, getData renvoie "" mais la liste des types reste lisible :
+// seul moyen de savoir « est-ce une colonne ? » avant le dépôt.
+const estGlissementDeListe = (e) => Array.from(e.dataTransfer.types).includes(TYPE_LISTE);
 
-// Texte cliquable qui devient un champ de saisie : Entrée/clic-ailleurs valide,
-// Échap annule. Ne déclenche pas le glisser-déposer du parent.
+// Texte cliquable qui devient un champ : Entrée/clic-ailleurs valide, Échap
+// annule. Ne déclenche pas le glisser-déposer du parent.
 function TexteEditable({ valeur, onEnregistrer, className, titre, refElement }) {
   const [edition, setEdition] = useState(false);
   const [v, setV] = useState(valeur);
-
-  function ouvrir() {
-    setV(valeur);
-    setEdition(true);
-  }
 
   function valider() {
     const nv = v.trim();
@@ -62,14 +53,23 @@ function TexteEditable({ valeur, onEnregistrer, className, titre, refElement }) 
   }
 
   return (
-    <button ref={refElement} type="button" onClick={ouvrir} title={titre} className={className}>
+    <button
+      ref={refElement}
+      type="button"
+      onClick={() => {
+        setV(valeur);
+        setEdition(true);
+      }}
+      title={titre}
+      className={className}
+    >
       {valeur}
     </button>
   );
 }
 
-// Bouton « + Ajouter une liste » qui se transforme en champ de saisie au clic.
-// Entrée ou clic ailleurs valide, Échap annule (comportement de Trello).
+// Bouton « + Ajouter une liste » qui devient un champ au clic. Entrée ou
+// clic-ailleurs valide, Échap annule (comportement de Trello).
 function AjoutListe({ label, placeholder, onAjouter }) {
   const [ouvert, setOuvert] = useState(false);
   const [valeur, setValeur] = useState("");
@@ -112,9 +112,8 @@ function AjoutListe({ label, placeholder, onAjouter }) {
   );
 }
 
-// Même principe que AjoutListe, mais avec en plus le menu déroulant du type.
-// Pas de validation au clic-ailleurs ici : ouvrir le menu déroulant ferait
-// perdre le focus au champ et annulerait la saisie en cours.
+// Comme AjoutListe, avec en plus le menu déroulant du type. Pas de validation
+// au clic-ailleurs : ouvrir le menu ferait perdre le focus et annulerait.
 function AjoutObjectif({ t, onAjouter }) {
   const [ouvert, setOuvert] = useState(false);
   const [nom, setNom] = useState("");
@@ -179,10 +178,9 @@ function AjoutObjectif({ t, onAjouter }) {
   );
 }
 
-// Une ligne d'objectif dans une liste : case à cocher, nom (renommable et
-// repliable), étiquette de type, série 🔥 et bouton d'archivage.
-// Composant à part car il a son propre état — savoir si le nom est replié ou
-// non ne concerne que cette ligne, pas tout le tableau.
+// Une ligne d'objectif : case à cocher, nom (renommable/repliable), étiquette
+// de type, série 🔥 et archivage. Composant à part car il a son propre état
+// (nom replié ou non), qui ne concerne que cette ligne.
 function LigneObjectif({
   objectif,
   liste,
@@ -199,16 +197,16 @@ function LigneObjectif({
   const [tronque, setTronque] = useState(false);
   const refNom = useRef(null);
 
-  // Le nom est-il coupé par le line-clamp ? Impossible à deviner d'après sa
-  // longueur (ça dépend de la largeur de colonne et de la police) : on mesure.
-  // On ne mesure pas en mode déplié, sinon le bouton disparaîtrait aussitôt.
+  // Le nom est-il coupé par le line-clamp ? Impossible à deviner (dépend de la
+  // largeur et de la police) : on mesure. Pas en mode déplié, sinon le bouton
+  // disparaîtrait aussitôt.
   useEffect(() => {
     if (deplie) return;
     const el = refNom.current;
     if (!el) return;
-    const observateur = new ResizeObserver(() => {
-      setTronque(el.scrollHeight > el.clientHeight + 1);
-    });
+    const observateur = new ResizeObserver(() =>
+      setTronque(el.scrollHeight > el.clientHeight + 1),
+    );
     observateur.observe(el);
     return () => observateur.disconnect();
   }, [objectif.nom, deplie]);
@@ -220,9 +218,8 @@ function LigneObjectif({
       draggable
       onDragStart={(e) => e.dataTransfer.setData("text/plain", objectif.id)}
       onDragOver={(e) => {
-        // Une colonne survolée passe son chemin : c'est la colonne qui doit la
-        // recevoir, pas la ligne. Sans ça, lâcher une colonne au-dessus d'un
-        // objectif ne ferait rien du tout.
+        // Une colonne survolée passe son chemin : c'est la colonne qui la
+        // reçoit, pas la ligne.
         if (estGlissementDeListe(e)) return;
         e.preventDefault();
         e.stopPropagation();
@@ -261,8 +258,8 @@ function LigneObjectif({
         />
 
         <div className="mt-1 flex items-center gap-2">
-          {/* Pas d'étiquette du tout pour un objectif sans type : une pastille
-              « Sans type » serait du bruit sur chaque ligne. */}
+          {/* Pas d'étiquette pour un objectif sans type : « Sans type » serait
+              du bruit sur chaque ligne. */}
           {libelleType && (
             <span
               className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded shrink-0"
@@ -300,9 +297,8 @@ function LigneObjectif({
         </span>
       )}
 
-      {/* Une fois l'objectif validé, archiver devient l'action naturelle :
-          l'icône le dit, et le bouton reste visible au lieu d'attendre le
-          survol. Tant qu'il n'est pas fait, on garde le × discret. */}
+      {/* Objectif validé : archiver devient l'action naturelle (icône, bouton
+          visible). Sinon on garde le × discret, révélé au survol. */}
       <button
         type="button"
         onClick={onArchiver}
@@ -318,12 +314,9 @@ function LigneObjectif({
   );
 }
 
-// Le tableau de listes (façon Trello) du dashboard.
-//
-// Les données ne sont PAS détenues ici mais dans la page dashboard, qui les
-// passe en props avec leurs setters. C'est ce qui permet aux cartes de
-// statistiques de se mettre à jour en direct quand on coche un objectif :
-// les deux affichages lisent la même source.
+// Le tableau de listes (façon Trello) du dashboard. Les données vivent dans la
+// page dashboard, passées en props avec leurs setters : les cartes de stats et
+// le tableau lisent la même source et se mettent à jour ensemble.
 export default function LifeMap({
   userId,
   listes,
@@ -336,11 +329,11 @@ export default function LifeMap({
 }) {
   const { t } = useLangue();
   const [survolee, setSurvolee] = useState(null); // liste survolée pendant un drag
+  const [erreur, setErreur] = useState(null); // échec d'une écriture en base
   const refDefilement = useRef(null);
 
-  // Molette verticale → défilement horizontal des colonnes.
-  // Écouteur natif non passif : React attache `wheel` en passif, ce qui
-  // interdirait preventDefault().
+  // Molette verticale → défilement horizontal des colonnes. Écouteur natif non
+  // passif : React attache `wheel` en passif, ce qui interdirait preventDefault().
   useEffect(() => {
     const el = refDefilement.current;
     if (!el) return;
@@ -349,9 +342,8 @@ export default function LifeMap({
       if (el.scrollWidth <= el.clientWidth) return; // rien à faire défiler
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return; // geste déjà horizontal
 
-      // Arrivé en butée, on rend la main à la page plutôt que de la bloquer.
-      const versLaFin = e.deltaY > 0;
-      const enButee = versLaFin
+      // En butée, on rend la main à la page plutôt que de la bloquer.
+      const enButee = e.deltaY > 0
         ? el.scrollLeft + el.clientWidth >= el.scrollWidth - 1
         : el.scrollLeft <= 0;
       if (enButee) return;
@@ -364,26 +356,15 @@ export default function LifeMap({
     return () => el.removeEventListener("wheel", auMolette);
   }, []);
 
-  // ── Lectures : petites aides pour piocher dans les props ──
+  // Lectures dans les props.
+  const periodesDe = (objectifId) =>
+    completions.filter((c) => c.objectif_id === objectifId).map((c) => c.periode);
+  const listesTriees = () => [...listes].sort(parPosition);
+  const objectifsDe = (listeId) =>
+    objectifs.filter((o) => o.liste_id === listeId).sort(parPosition);
 
-  // Les périodes déjà validées pour un objectif (sert aux séries et au « fait ? »).
-  function periodesDe(objectifId) {
-    return completions.filter((c) => c.objectif_id === objectifId).map((c) => c.periode);
-  }
-
-  // Les colonnes dans l'ordre choisi par l'utilisateur (copie : le tri se fait
-  // en place, on ne veut pas modifier la prop reçue).
-  function listesTriees() {
-    return [...listes].sort(parPosition);
-  }
-
-  // Les objectifs d'une liste, dans l'ordre choisi par l'utilisateur.
-  function objectifsDe(listeId) {
-    return objectifs.filter((o) => o.liste_id === listeId).sort(parPosition);
-  }
-
-  // ── Écritures : chaque action met à jour la base ET l'état local, pour que
-  //    l'interface réagisse sans attendre un rechargement ──
+  // Écritures : chaque action met à jour la base ET l'état local, pour que
+  // l'interface réagisse sans attendre un rechargement.
 
   async function renommerListe(id, titre) {
     setListes((l) => l.map((x) => (x.id === id ? { ...x, titre } : x)));
@@ -397,15 +378,19 @@ export default function LifeMap({
   }
 
   async function ajouterObjectif(listeId, nom, type) {
-    const nb = objectifsDe(listeId).length;
-    const { data } = await supabase
+    setErreur(null);
+    const { data, error } = await supabase
       .from("objectifs")
-      // `|| null` : le menu déroulant renvoie la chaîne vide pour « sans type »,
-      // que la contrainte de la base refuserait. C'est NULL qu'elle accepte.
-      .insert({ user_id: userId, liste_id: listeId, nom, type: type || null, position: nb })
+      // `|| null` : le menu renvoie "" pour « sans type », que la base refuse ;
+      // elle accepte NULL.
+      .insert({ user_id: userId, liste_id: listeId, nom, type: type || null, position: objectifsDe(listeId).length })
       .select()
       .single();
-    if (data) setObjectifs((o) => [...o, data]);
+    if (error) {
+      setErreur(`${t.dashboard.erreurAjoutObjectif} ${error.message}`);
+      return;
+    }
+    setObjectifs((o) => [...o, data]);
   }
 
   async function renommerObjectif(id, nom) {
@@ -413,28 +398,26 @@ export default function LifeMap({
     await supabase.from("objectifs").update({ nom }).eq("id", id);
   }
 
-  // Archiver ≠ supprimer : l'objectif sort du tableau mais reste en base, avec
-  // tout son historique. On le retrouve dans l'archive du profil.
+  // Archiver ≠ supprimer : l'objectif sort du tableau mais reste en base avec
+  // son historique. On le retrouve dans l'archive du profil.
   async function archiverObjectif(id) {
     await supabase.from("objectifs").update({ archive: true }).eq("id", id);
     setObjectifs((o) => o.filter((x) => x.id !== id));
   }
 
   // Cocher / décocher : logique partagée avec le panneau « À faire ».
-  function basculer(objectif) {
-    return basculerCompletion({ objectif, userId, completions, setCompletions });
-  }
+  const basculer = (objectif) =>
+    basculerCompletion({ objectif, userId, completions, setCompletions });
 
   // Déplace un objectif vers listeCibleId à l'index donné (null = à la fin).
-  // Recalcule les positions des listes concernées et les persiste.
+  // Recalcule et persiste les positions des listes concernées.
   async function deplacerObjectif(objectifId, listeCibleId, indexCible) {
     const objet = objectifs.find((o) => o.id === objectifId);
     if (!objet) return;
     const source = objet.liste_id;
 
     const cible = objectifsDe(listeCibleId).filter((o) => o.id !== objectifId);
-    const idx = indexCible == null ? cible.length : indexCible;
-    cible.splice(idx, 0, objet);
+    cible.splice(indexCible == null ? cible.length : indexCible, 0, objet);
 
     const affectes = new Map();
     cible.forEach((o, i) => affectes.set(o.id, { ...o, liste_id: listeCibleId, position: i }));
@@ -447,30 +430,19 @@ export default function LifeMap({
     setObjectifs((prev) => prev.map((o) => affectes.get(o.id) || o));
     await Promise.all(
       [...affectes.values()].map((o) =>
-        supabase
-          .from("objectifs")
-          .update({ liste_id: o.liste_id, position: o.position })
-          .eq("id", o.id),
+        supabase.from("objectifs").update({ liste_id: o.liste_id, position: o.position }).eq("id", o.id),
       ),
     );
   }
 
-  function idDepuisDrop(e) {
-    return e.dataTransfer.getData("text/plain");
-  }
-
-  // Réordonne les colonnes. On distingue les deux glissements par le type de
-  // données transporté : TYPE_LISTE pour une colonne, "text/plain" pour un
-  // objectif — sinon déposer une colonne serait pris pour un déplacement
-  // d'objectif, et inversement.
+  // Réordonne les colonnes. Les deux glissements se distinguent par le type
+  // transporté : TYPE_LISTE pour une colonne, "text/plain" pour un objectif.
   async function deplacerListe(listeId, indexCible) {
     const ordre = listesTriees();
     const depuis = ordre.findIndex((l) => l.id === listeId);
     if (depuis === -1 || depuis === indexCible) return;
 
-    const [deplacee] = ordre.splice(depuis, 1);
-    ordre.splice(indexCible, 0, deplacee);
-
+    ordre.splice(indexCible, 0, ordre.splice(depuis, 1)[0]);
     const reindexees = ordre.map((l, i) => ({ ...l, position: i }));
     setListes(reindexees);
 
@@ -485,10 +457,18 @@ export default function LifeMap({
     <section className="mt-8">
       <h2 className="font-bold text-xl mb-5">{t.dashboard.lifeMap}</h2>
 
-      {/* Mobile : listes empilées, on fait défiler la page verticalement.
-          À partir de md : colonnes côte à côte avec défilement horizontal.
-          items-start (desktop) : chaque colonne garde sa hauteur propre au
-          lieu de s'étirer sur celle de la plus haute. */}
+      {erreur && (
+        <p
+          role="alert"
+          className="mb-4 text-sm text-red-300 bg-red-950/40 border border-red-900 rounded-lg px-4 py-2"
+        >
+          {erreur}
+        </p>
+      )}
+
+      {/* Mobile : listes empilées (défilement vertical de la page). À partir de
+          md : colonnes côte à côte, défilement horizontal. items-start (desktop) :
+          chaque colonne garde sa hauteur propre. */}
       <div
         ref={refDefilement}
         className="defilement-listes flex flex-col md:flex-row items-stretch md:items-start gap-4 md:overflow-x-auto pb-4"
@@ -510,7 +490,7 @@ export default function LifeMap({
                 deplacerListe(idListe, indexListe);
                 return;
               }
-              const id = idDepuisDrop(e);
+              const id = e.dataTransfer.getData("text/plain");
               if (id) deplacerObjectif(id, liste.id, null);
             }}
             className={`w-full md:w-[24rem] shrink-0 bg-gray-900/60 border rounded-2xl p-5 flex flex-col gap-3 transition ${
@@ -518,8 +498,8 @@ export default function LifeMap({
             }`}
           >
             {/* En-tête de liste — sert aussi de poignée pour déplacer la
-                colonne. On ne rend pas toute la colonne glissable : les
-                objectifs qu'elle contient le sont déjà. */}
+                colonne. On ne rend pas toute la colonne glissable : ses
+                objectifs le sont déjà. */}
             <div
               draggable
               onDragStart={(e) => {
@@ -527,8 +507,22 @@ export default function LifeMap({
                 e.stopPropagation();
               }}
               title={t.dashboard.deplacerListe}
-              className="flex items-center gap-2 cursor-grab active:cursor-grabbing"
+              className="group flex items-center gap-2 cursor-grab active:cursor-grabbing"
             >
+              {/* Poignée de déplacement, révélée au survol de l'en-tête. */}
+              <span
+                aria-hidden="true"
+                className="shrink-0 -ml-1 text-gray-600 group-hover:text-gray-400 transition"
+              >
+                <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                  <circle cx="2.5" cy="3" r="1.2" />
+                  <circle cx="7.5" cy="3" r="1.2" />
+                  <circle cx="2.5" cy="8" r="1.2" />
+                  <circle cx="7.5" cy="8" r="1.2" />
+                  <circle cx="2.5" cy="13" r="1.2" />
+                  <circle cx="7.5" cy="13" r="1.2" />
+                </svg>
+              </span>
               <span
                 aria-hidden="true"
                 className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -552,24 +546,21 @@ export default function LifeMap({
 
             {/* Objectifs */}
             <ul className="flex flex-col gap-2">
-              {objectifsDe(liste.id).map((objectif, index) => {
-                const periodes = periodesDe(objectif.id);
-                return (
-                  <LigneObjectif
-                    key={objectif.id}
-                    objectif={objectif}
-                    liste={liste}
-                    t={t}
-                    index={index}
-                    fait={estFaitMaintenant(objectif.type, periodes)}
-                    serie={calculerSerie(objectif.type, periodes)}
-                    onBasculer={() => basculer(objectif)}
-                    onRenommer={(nom) => renommerObjectif(objectif.id, nom)}
-                    onArchiver={() => archiverObjectif(objectif.id)}
-                    onDeposer={(id, position) => deplacerObjectif(id, liste.id, position)}
-                  />
-                );
-              })}
+              {objectifsDe(liste.id).map((objectif, index) => (
+                <LigneObjectif
+                  key={objectif.id}
+                  objectif={objectif}
+                  liste={liste}
+                  t={t}
+                  index={index}
+                  fait={estFaitMaintenant(objectif.type, periodesDe(objectif.id))}
+                  serie={calculerSerie(objectif.type, periodesDe(objectif.id))}
+                  onBasculer={() => basculer(objectif)}
+                  onRenommer={(nom) => renommerObjectif(objectif.id, nom)}
+                  onArchiver={() => archiverObjectif(objectif.id)}
+                  onDeposer={(id, position) => deplacerObjectif(id, liste.id, position)}
+                />
+              ))}
             </ul>
 
             <AjoutObjectif t={t} onAjouter={(nom, type) => ajouterObjectif(liste.id, nom, type)} />

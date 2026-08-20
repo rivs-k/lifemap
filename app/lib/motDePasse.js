@@ -1,7 +1,6 @@
 // Critères de sécurité du mot de passe, partagés par l'inscription et la
-// réinitialisation. Les tests sont couplés PAR POSITION aux libellés
-// `inscription.criteres` du dictionnaire : garder les deux listes dans le
-// même ordre.
+// réinitialisation. Couplés PAR POSITION aux libellés `inscription.criteres`
+// du dictionnaire : garder les deux listes dans le même ordre.
 export const TESTS_CRITERES = [
   (mdp) => mdp.length >= 8,
   (mdp) => /[A-Z]/.test(mdp),

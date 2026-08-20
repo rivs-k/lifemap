@@ -17,15 +17,13 @@ export default function BoutonsFournisseurs() {
     setErreur(null);
     setEnCours(provider);
 
-    // Redirige vers le fournisseur puis revient sur /dashboard avec la
-    // session dans l'URL ; le client Supabase la détecte au chargement.
+    // Redirige vers le fournisseur puis revient sur /dashboard, session en URL.
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: `${window.location.origin}/dashboard` },
     });
 
-    // Pas de redirection en cas d'erreur (ex. provider non activé côté
-    // Supabase) : on reste sur la page, il faut donc lever le chargement.
+    // Pas de redirection en cas d'erreur : on reste sur la page, on lève le chargement.
     if (error) {
       setErreur(messageErreurAuth(error, t));
       setEnCours(null);

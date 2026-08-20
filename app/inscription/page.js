@@ -32,17 +32,10 @@ export default function Inscription() {
     });
 
     setChargement(false);
-    if (error) {
-      setErreur(messageErreurAuth(error, t));
-      return;
-    }
-    // Session présente = confirmation email désactivée : l'utilisateur est déjà
-    // connecté. Sinon, un email de confirmation a été envoyé.
-    if (data.session) {
-      router.push("/dashboard");
-    } else {
-      setSucces(true);
-    }
+    if (error) return setErreur(messageErreurAuth(error, t));
+    // Session présente = confirmation email désactivée, sinon email envoyé.
+    if (data.session) router.push("/dashboard");
+    else setSucces(true);
   }
 
   return (
@@ -91,12 +84,7 @@ export default function Inscription() {
                   {t.inscription.criteres.map((label, i) => {
                     const valide = TESTS_CRITERES[i](motdepasse);
                     return (
-                      <li
-                        key={label}
-                        className={`flex items-center gap-2 text-sm transition ${
-                          valide ? "text-teal-500" : "text-gray-400"
-                        }`}
-                      >
+                      <li key={label} className={`flex items-center gap-2 text-sm transition ${valide ? "text-teal-500" : "text-gray-400"}`}>
                         <span aria-hidden="true">{valide ? "✓" : "○"}</span>
                         {label}
                       </li>

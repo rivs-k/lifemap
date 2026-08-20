@@ -5,11 +5,9 @@ import { supabase } from "../lib/supabase";
 import { useLangue } from "./LangueProvider";
 
 function LigneArchive({ objectif, listes, t, onRestaurer, onSupprimer }) {
-  // Liste d'origine si elle existe encore, sinon la première disponible
-  // (une liste supprimée laisse ses objectifs sans liste_id).
-  const listeOrigineExiste = listes.some((l) => l.id === objectif.liste_id);
+  // Liste d'origine si elle existe encore, sinon la première disponible.
   const [listeCible, setListeCible] = useState(
-    listeOrigineExiste ? objectif.liste_id : listes[0]?.id || "",
+    listes.some((l) => l.id === objectif.liste_id) ? objectif.liste_id : listes[0]?.id || "",
   );
   const [confirme, setConfirme] = useState(false);
 
@@ -17,7 +15,6 @@ function LigneArchive({ objectif, listes, t, onRestaurer, onSupprimer }) {
     <li className="flex flex-wrap items-center gap-3 bg-gray-900/60 border border-gray-800 rounded-xl p-3">
       {objectif.emoji && <span aria-hidden="true">{objectif.emoji}</span>}
       <span className="flex-1 min-w-0 truncate">{objectif.nom}</span>
-      {/* Rien à afficher pour un objectif sans type. */}
       {objectif.type && (
         <span className="text-xs text-gray-400 shrink-0">
           {t.dashboard.categories[objectif.type]}

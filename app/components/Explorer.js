@@ -13,8 +13,7 @@ const COULEUR_TYPE = {
 };
 const TYPES = ["quotidien", "hebdomadaire", "mensuel", "unique"];
 
-// En-tête de colonne cliquable. La flèche indique le sens du tri en cours ;
-// « ▾ » signale simplement que la colonne est triable.
+// En-tête de colonne cliquable. « ▾ » signale une colonne triable.
 function EnteteTriable({ libelle, colonne, tri, onTrier, aligne = "left" }) {
   const actif = tri.colonne === colonne;
   return (
@@ -35,16 +34,10 @@ function EnteteTriable({ libelle, colonne, tri, onTrier, aligne = "left" }) {
   );
 }
 
-// La page des objectifs communautaires.
-//
-// Seule partie de l'app où l'on voit les données des autres : les objectifs,
-// les votes et les participations sont lisibles par tous les utilisateurs
-// connectés (l'écriture, elle, reste limitée à ses propres lignes).
-//
-// Les chiffres collectifs (participants, progression, meilleure série) ne
-// peuvent pas être calculés ici : la sécurité de la base masque les lignes des
-// autres. Ils viennent de la fonction SQL `stats_communautaires`, qui ne
-// renvoie que des totaux.
+// Page des objectifs communautaires : seule partie de l'app où l'on voit les
+// données des autres (lecture publique, écriture limitée à ses propres lignes).
+// Les chiffres collectifs viennent de la fonction SQL `stats_communautaires`,
+// car la sécurité de la base masque les lignes des autres.
 export default function Explorer({ userId }) {
   const { t } = useLangue();
   const [objectifs, setObjectifs] = useState([]);
@@ -56,6 +49,9 @@ export default function Explorer({ userId }) {
   const [tri, setTri] = useState({ colonne: "votes", sens: "desc" });
   const [formulaireOuvert, setFormulaireOuvert] = useState(false);
   const [chargement, setChargement] = useState(true);
+
+  const indexerStats = (data) =>
+    setStats(Object.fromEntries((data || []).map((s) => [s.objectif_id, s])));
 
   useEffect(() => {
     async function charger() {
@@ -77,21 +73,20 @@ export default function Explorer({ userId }) {
       setVotes(rv.data || []);
       setMesParticipations(new Set((rp.data || []).map((p) => p.objectif_communautaire_id)));
       setListes(rl.data || []);
-      setStats(Object.fromEntries((rs.data || []).map((s) => [s.objectif_id, s])));
+      indexerStats(rs.data);
       setChargement(false);
     }
     charger();
   }, [userId]);
 
-  // Les agrégats changent dès qu'on rejoint ou quitte un objectif : on les
-  // redemande à la base, car ils dépendent de TOUS les participants.
+  // Les agrégats dépendent de TOUS les participants : on les redemande à la base
+  // dès qu'on rejoint ou quitte un objectif.
   async function rafraichirStats() {
     const { data } = await supabase.rpc("stats_communautaires");
-    setStats(Object.fromEntries((data || []).map((s) => [s.objectif_id, s])));
+    indexerStats(data);
   }
 
-  // Deux lectures dérivées de la liste des votes : le total par objectif, et
-  // ceux que j'ai moi-même votés (pour colorer la flèche).
+  // Total de votes par objectif, et ceux que j'ai votés (pour colorer la flèche).
   const votesParObjectif = votes.reduce((acc, v) => {
     acc[v.objectif_communautaire_id] = (acc[v.objectif_communautaire_id] || 0) + 1;
     return acc;
@@ -119,13 +114,11 @@ export default function Explorer({ userId }) {
     }
   }
 
-  // Rejoindre = créer une copie personnelle de l'objectif dans SA Life Map,
-  // reliée à l'objectif communautaire. C'est ce lien qui permet de compter les
-  // validations collectives : on coche dans son tableau habituel, et la
-  // progression du groupe monte. Un seul endroit pour valider.
+  // Rejoindre = copier l'objectif dans SA Life Map, relié au communautaire. Ce
+  // lien permet de compter les validations collectives : on coche dans son
+  // tableau habituel et la progression du groupe monte.
   async function rejoindre(oc) {
-    // L'objectif atterrit dans une liste dédiée, créée au besoin : plus
-    // prévisible que de le glisser dans une liste existante au hasard.
+    // L'objectif atterrit dans une liste dédiée, créée au besoin.
     let liste = listes.find((l) => l.titre === t.explorer.listeRejoints);
     if (!liste) {
       const { data } = await supabase
@@ -166,8 +159,8 @@ export default function Explorer({ userId }) {
       .delete()
       .eq("objectif_communautaire_id", oc.id)
       .eq("user_id", userId);
-    // On archive l'objectif personnel au lieu de le détruire : l'historique
-    // de validations est conservé, comme partout ailleurs.
+    // On archive l'objectif personnel au lieu de le détruire : l'historique de
+    // validations est conservé, comme partout ailleurs.
     await supabase
       .from("objectifs")
       .update({ archive: true })
@@ -182,8 +175,7 @@ export default function Explorer({ userId }) {
     rafraichirStats();
   }
 
-  // N'importe quel utilisateur peut proposer un objectif à la communauté.
-  // `cree_par` retient l'auteur : lui seul pourra le modifier ou le supprimer.
+  // `cree_par` retient l'auteur : lui seul pourra modifier ou supprimer.
   async function proposer(e) {
     e.preventDefault();
     const form = e.target;
@@ -209,9 +201,8 @@ export default function Explorer({ userId }) {
     rafraichirStats();
   }
 
-  // Cliquer la colonne déjà triée inverse le sens ; sinon on change de colonne.
-  // Le sens par défaut dépend du type de donnée : A→Z pour un nom, mais du plus
-  // grand au plus petit pour un chiffre (on veut voir les plus votés en tête).
+  // Recliquer la colonne triée inverse le sens ; sinon on change de colonne. Le
+  // sens par défaut : A→Z pour un nom, décroissant pour un chiffre.
   function trierPar(colonne) {
     setTri((t0) =>
       t0.colonne === colonne
@@ -239,8 +230,7 @@ export default function Explorer({ userId }) {
     }
   }
 
-  // Les lignes affichées : d'abord filtrées par la recherche (titre ET
-  // description), puis triées selon la colonne choisie.
+  // Lignes affichées : filtrées par la recherche (titre + description), puis triées.
   const terme = recherche.trim().toLowerCase();
   const lignes = objectifs
     .filter((o) =>
@@ -253,8 +243,7 @@ export default function Explorer({ userId }) {
       return tri.sens === "asc" ? cmp : -cmp;
     });
 
-  // Valeurs dérivées d'une ligne, partagées par le tableau (desktop) et les
-  // cartes (mobile) : les deux affichages montrent la même chose.
+  // Valeurs dérivées d'une ligne, partagées par le tableau (desktop) et les cartes (mobile).
   function calculs(oc) {
     const s = stats[oc.id] || {};
     const participants = Number(s.participants || 0);
@@ -348,8 +337,7 @@ export default function Explorer({ userId }) {
         <p className="mt-8 text-gray-400">{t.explorer.aucunResultat}</p>
       ) : (
         <>
-        {/* Mobile : une carte par objectif — un tableau de 8 colonnes serait
-            illisible sur téléphone, et le titre s'y retrouvait tronqué. */}
+        {/* Mobile : une carte par objectif (un tableau de 8 colonnes serait illisible sur téléphone). */}
         <ul className="md:hidden mt-6 flex flex-col gap-3">
           {lignes.map((oc) => {
             const c = calculs(oc);
@@ -494,16 +482,8 @@ export default function Explorer({ userId }) {
             <tbody>
               {lignes.map((oc) => {
                 const {
-                  participants,
-                  faits,
-                  total,
-                  serie,
-                  pourcent,
-                  tousFaits,
-                  couleur,
-                  participe,
-                  aVote,
-                  nbVotes,
+                  participants, faits, total, serie, pourcent,
+                  tousFaits, couleur, participe, aVote, nbVotes,
                 } = calculs(oc);
 
                 return (

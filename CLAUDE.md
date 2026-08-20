@@ -6,14 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 LifeMap — application de suivi d'objectifs personnels et de développement personnel. L'interface est en français (les échanges avec l'utilisateur aussi).
 
-Quatre écrans principaux, tous encore à l'état de squelette (un `<h1>` chacun) sauf la page d'accueil :
+Toutes les pages sont construites et branchées à Supabase, plus la page d'accueil :
 
-- `/inscription` — création de compte : nom d'utilisateur, email, mot de passe avec critères de sécurité affichés, connexion via Google/Apple/Microsoft
-- `/agenda` — vue calendrier mensuelle des événements/objectifs, résumé du jour, statistiques du mois
-- `/profil` — dashboard : niveau, XP, badges, séries de jours d'affilée, statistiques détaillées, historique d'activité, archives des objectifs complétés
-- `/explorer` — objectifs communautaires (quotidien/hebdomadaire/mensuel) que les utilisateurs rejoignent, avec votes, progression collective, nombre de participants
+- `/inscription`, `/connexion`, `/mot-de-passe-oublie`, `/nouveau-mot-de-passe` — création de compte, connexion, réinitialisation de mot de passe (email + fournisseurs via [BoutonsFournisseurs.js](app/components/BoutonsFournisseurs.js)), critères de sécurité affichés en direct via [app/lib/motDePasse.js](app/lib/motDePasse.js)
+- `/dashboard` — Life Map : listes d'objectifs personnalisables (quotidien/hebdomadaire/mensuel/unique), rendue par [LifeMap.js](app/components/LifeMap.js)
+- `/agenda` — vue calendrier mensuelle des événements/objectifs, résumé du jour, statistiques du mois, rendue par [Calendrier.js](app/components/Calendrier.js)
+- `/profil` — séries de jours d'affilée, statistiques (validations, meilleure série, objectifs actifs), archives des objectifs complétés
+- `/explorer` — objectifs communautaires (quotidien/hebdomadaire/mensuel) que les utilisateurs rejoignent, avec votes, progression collective, nombre de participants, rendue par [Explorer.js](app/components/Explorer.js)
+- `/parametres` — changement de mot de passe, langue, déconnexion, suppression de compte
 
-Back-end prévu : Supabase (auth + base de données). Rien n'est encore branché — les chiffres de la page d'accueil sont des données en dur.
+Les pages `/dashboard`, `/profil`, `/agenda`, `/explorer`, `/parametres` partagent la coquille [PageApp.js](app/components/PageApp.js) (garde d'auth + navbar app) — voir [app/lib/routesApp.js](app/lib/routesApp.js) pour la distinction avec les routes marketing.
+
+Back-end : Supabase (auth + base de données), branché. `.env.local` doit être rempli pour que l'auth fonctionne — voir la section Supabase plus bas.
 
 ## Commands
 
@@ -22,9 +26,8 @@ npm run dev      # serveur de dev (next dev)
 npm run build    # build de production (next build)
 npm run start    # serveur de production (next start)
 npm run lint     # ESLint (eslint .)
+npm test         # tests unitaires (node --test app/lib/*.test.js)
 ```
-
-Pas de tests configurés — `npm test` n'existe pas.
 
 `next lint` **n'existe plus** : dépréciée en Next 15, supprimée en Next 16. ESLint est configuré directement dans [eslint.config.mjs](eslint.config.mjs) au format flat config, que `eslint-config-next` exporte nativement (inutile d'ajouter `@eslint/eslintrc`/`FlatCompat`).
 
@@ -36,6 +39,7 @@ La règle `react/no-unescaped-entities` interdit les apostrophes droites dans le
 - Tailwind CSS 4 via `@tailwindcss/postcss` ([postcss.config.js](postcss.config.js)) ; tout passe par `@import "tailwindcss";` dans [app/globals.css](app/globals.css) — pas de `tailwind.config.js` (Tailwind 4 se configure en CSS)
 - JavaScript uniquement, pas de TypeScript — fichiers `.js`, pas `.tsx`
 - `package.json` déclare `"type": "module"`
+- Supabase (`@supabase/supabase-js`) pour l'auth et la base de données ; Gemini (`@google/genai`) pour l'assistant de décomposition d'objectifs — voir la section Supabase plus bas
 
 ## Fond animé — architecture et pièges
 
@@ -66,18 +70,37 @@ Bascule FR/EN par dictionnaire + Context React, **sans librairie et sans changer
 
 ## Supabase (back-end)
 
-En cours de mise en place. Le code est prêt, **le projet Supabase et les clés peuvent encore manquer** — vérifier `.env.local` avant de supposer que l'auth fonctionne.
+Branché. Le code est prêt, **vérifier que `.env.local` est bien rempli** avant de supposer que l'auth fonctionne (il ne l'est pas forcément sur toutes les machines).
 
 - Librairie : `@supabase/supabase-js` (approche client simple, pas `@supabase/ssr`). Adapté tant que l'auth se fait depuis des composants client ; migrer vers `@supabase/ssr` si un jour des routes serveur doivent lire la session (ex. `/profil` protégé côté serveur).
 - [app/lib/supabase.js](app/lib/supabase.js) — client unique partagé. Lève une erreur explicite si les clés manquent (donc ne l'importer que là où on l'utilise vraiment).
 - Clés dans `.env.local` (gitignoré) : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Modèle dans `.env.example`. La clé anon est publique (protégée par Row Level Security), safe côté navigateur.
-- ⚠️ Le dépôt git est enraciné dans `C:/Users/CMFPRVL` (dossier perso), pas dans `lifemap`. Le `.gitignore` du projet protège `.env*.local` — ne jamais committer de secret.
+- [app/lib/erreursAuth.js](app/lib/erreursAuth.js) traduit les erreurs Supabase Auth en messages français affichés dans les formulaires.
+
+### Assistant IA — décomposition d'objectif (Gemini)
+
+[AssistantObjectif.js](app/components/AssistantObjectif.js) laisse décrire un objectif large en texte libre et appelle [POST /api/decouper-objectif](app/api/decouper-objectif/route.js), qui le décompose en 3 à 6 sous-objectifs typés (nom, type, emoji) via Gemini, schéma JSON imposé en sortie.
+
+- [app/lib/gemini.js](app/lib/gemini.js) — client Gemini paresseux, **clé `GEMINI_API_KEY` sans préfixe `NEXT_PUBLIC_`** : ne jamais l'importer depuis un composant `"use client"`, uniquement depuis les routes API.
+- La route vérifie un jeton Bearer Supabase avant d'appeler Gemini (appel facturé, réservé aux utilisateurs connectés).
 
 ### Schéma & migrations
 
-SQL dans [supabase/migrations/](supabase/migrations/), à exécuter à la main dans le SQL Editor (pas de CLI Supabase). `0001_profiles.sql` : table `profiles` + trigger de création à l'inscription. `0002_listes_objectifs.sql` : Life Map.
+SQL dans [supabase/migrations/](supabase/migrations/), à exécuter à la main et **dans l'ordre** dans le SQL Editor (pas de CLI Supabase) :
 
-- `profiles` (id → auth.users, pseudo, niveau, xp) — créé automatiquement à l'inscription par un trigger.
+| Migration | Contenu |
+| --- | --- |
+| `0001_profiles.sql` | table `profiles` + trigger de création à l'inscription |
+| `0002_listes_objectifs.sql` | Life Map : `listes`, `objectifs`, `completions` |
+| `0003_evenements.sql` | événements de l'agenda |
+| `0004_evenements_multi_jours.sql` | événements sur plusieurs jours |
+| `0005_explorer.sql` | objectifs communautaires (voir section dédiée) |
+| `0006_avatars.sql` | avatars de profil |
+| `0007_objectif_sans_type.sql` | objectifs sans type (ex. tâches ponctuelles libres) |
+| `0008_supprimer_niveau_xp.sql` | retire `profiles.niveau`/`xp` (système de niveaux abandonné) |
+| `0009_suppression_compte.sql` | suppression de compte utilisateur |
+
+- `profiles` (id → auth.users, pseudo, avatar) — créé automatiquement à l'inscription par un trigger.
 - `listes` (colonnes de la Life Map) : `titre`, `couleur`, `position`. Libres, créées par l'utilisateur.
 - `objectifs` : `liste_id` (changer = déplacer), `type` ∈ {quotidien, hebdomadaire, mensuel, unique}, `emoji`, `archive`, `position`. **Pas de booléen `termine`.**
 - `completions` : une ligne = objectif validé pour une `periode` (date). Cocher = insérer, décocher = supprimer.
@@ -99,17 +122,11 @@ SQL dans [supabase/migrations/](supabase/migrations/), à exécuter à la main d
 - Semaine **lundi→dimanche** (période = le lundi). Mois = le 1er. Flamme 🔥 dès **2** périodes consécutives.
 - La logique (clé de période, série, « fait maintenant ? ») est dans [app/lib/periodes.js](app/lib/periodes.js), **calculée en date locale** et couverte par des tests (relancer le script de test si on la modifie). `type: "unique"` = pas de série, validé une fois.
 
-## Points et niveaux
+## Points et niveaux — supprimé
 
-Règles validées avec l'utilisateur, implémentées dans [app/lib/points.js](app/lib/points.js) (couvert par des tests — relancer le script si on y touche).
+Le système d'XP et de niveaux a été **retiré** pour simplifier le code (`app/lib/points.js`, `app/components/PastilleNiveau.js` et leurs tests supprimés ; colonnes `profiles.niveau`/`xp` droppées par la migration `0008`). Il ne reste plus de notion de points, de multiplicateur ou de palier de niveau. La **série** (flamme 🔥), elle, subsiste : elle vient de [app/lib/periodes.js](app/lib/periodes.js), pas du système de points.
 
-- **XP par validation** : quotidien 10, hebdomadaire 50, mensuel 150, unique 10. Échelle volontairement **sous-proportionnelle** (une semaine vaut 5 jours et non 7) : tenir une habitude chaque jour est le plus exigeant, c'est donc la régularité quotidienne qui est le mieux payée. `unique` est bas car un objectif ponctuel va de « passer un coup de fil » à « passer le permis ».
-- **Bonus de série**, appliqué à la série *au moment de la validation* : ×1,2 dès 2, ×1,5 dès 7, ×2 dès 30 (plafonné).
-- **Seuil de niveau** = `25 × N × (N−1)` → niveau 2 à 50 XP, 3 à 150, 4 à 300. L'écart grandit de 50 par palier.
-
-**L'XP n'est jamais stocké — il est recalculé depuis `completions`.** C'est le point à ne pas casser : on peut décocher un objectif, et un compteur stocké dériverait au moindre oubli de décrémenter, sans possibilité de correction. Recalculé, décocher retire les points mécaniquement. Les colonnes `profiles.niveau` et `profiles.xp` existent encore mais **ne sont pas lues**.
-
-Les objectifs **archivés** comptent dans l'XP (les validations ont été gagnées) mais pas dans « objectifs actifs ». Une suppression définitive, elle, efface les completions en cascade et fait donc baisser l'XP — c'est la différence assumée entre archiver et supprimer.
+Les objectifs **archivés** ne comptent pas dans « objectifs actifs » mais leurs validations restent dans `completions` et alimentent les statistiques (validations, meilleure série). Une suppression définitive efface les completions en cascade — c'est la différence assumée entre archiver et supprimer.
 
 ## Conventions de style
 

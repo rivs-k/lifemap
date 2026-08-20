@@ -11,7 +11,6 @@ import ChampTexte from "../components/ChampTexte";
 import AssistantObjectif from "../components/AssistantObjectif";
 import { useLangue } from "../components/LangueProvider";
 import { periodeCourante, serieJoursComplets, estFaitMaintenant } from "../lib/periodes";
-import { calculerXp, niveauDepuisXp } from "../lib/points";
 import { PALETTE } from "../lib/couleurs";
 import { parPosition } from "../lib/position";
 
@@ -20,15 +19,13 @@ function depuisCle(k) {
   return new Date(a, m - 1, j);
 }
 
-const formatJourCourt = (k, langue) =>
-  new Intl.DateTimeFormat(langue, { weekday: "short" }).format(depuisCle(k));
+const formatCourt = (k, langue, option) =>
+  new Intl.DateTimeFormat(langue, option).format(depuisCle(k));
+const formatJourCourt = (k, langue) => formatCourt(k, langue, { weekday: "short" });
+const formatMoisCourt = (k, langue) => formatCourt(k, langue, { month: "short" });
 
-const formatMoisCourt = (k, langue) =>
-  new Intl.DateTimeFormat(langue, { month: "short" }).format(depuisCle(k));
-
-// Types affichés dans la carte « objectifs terminés » + couleurs validées.
-// « Sans type » ferme la liste, en gris neutre : c'est une absence d'étiquette,
-// pas une cinquième catégorie qui mériterait sa propre couleur.
+// Types affichés dans la carte « objectifs terminés » + couleurs. « Sans type »
+// ferme la liste, en gris neutre : absence d'étiquette, pas une catégorie.
 const TYPES_STATS = [
   { cle: "quotidien", couleur: "#0d9488" },
   { cle: "hebdomadaire", couleur: "#9085e9" },
@@ -37,20 +34,18 @@ const TYPES_STATS = [
   { cle: "sansType", couleur: "#6b7280" },
 ];
 
-// Ordre d'affichage des cartes résumé, tel qu'on l'a à la première visite.
+// Ordre des cartes résumé à la première visite.
 const CARTES_DEFAUT = ["journalier", "termines", "evenement", "aFaire"];
 
-// Le type de données transporté quand on glisse une carte. Distinct de ceux de
-// la Life Map : une carte lâchée sur une colonne ne doit rien déclencher.
+// Type transporté quand on glisse une carte, distinct de ceux de la Life Map :
+// une carte lâchée sur une colonne ne doit rien déclencher.
 const TYPE_CARTE = "application/x-carte";
 
-// L'ordre des cartes est une préférence d'affichage, pas une donnée : il reste
-// dans le navigateur plutôt qu'en base (aucune migration, aucune requête).
+// L'ordre des cartes est une préférence d'affichage : localStorage, pas la base.
 const CLE_ORDRE = "lifemap:ordre-cartes";
 
-// On ne fait pas confiance à ce qu'on relit : le stockage survit aux mises à
-// jour du code. On ne garde que les cartes connues, puis on complète avec celles
-// qui manquent — une carte ajoutée plus tard apparaît donc à la fin.
+// On ne fait pas confiance au stockage relu : on garde les cartes connues, puis
+// on complète avec celles qui manquent (une carte ajoutée plus tard vient à la fin).
 function lireOrdre() {
   try {
     const brut = JSON.parse(localStorage.getItem(CLE_ORDRE));
@@ -59,6 +54,25 @@ function lireOrdre() {
   } catch {
     return CARTES_DEFAUT;
   }
+}
+
+// Au retour d'une connexion Google, la session peut se poser après le montage :
+// on attend l'évènement d'auth plutôt que de rediriger. `null` = non connecté.
+function attendreUtilisateur() {
+  return new Promise((resolve) => {
+    const { data: ecoute } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (session) {
+        ecoute.subscription.unsubscribe();
+        resolve(session.user);
+      }
+    });
+    // Filet : après 2 s sans session, on relit une dernière fois puis on tranche.
+    setTimeout(async () => {
+      ecoute.subscription.unsubscribe();
+      const { data } = await supabase.auth.getSession();
+      resolve(data.session?.user ?? null);
+    }, 2000);
+  });
 }
 
 export default function Dashboard() {
@@ -76,18 +90,15 @@ export default function Dashboard() {
   const [prochainEvenement, setProchainEvenement] = useState(null);
   const [ordreCartes, setOrdreCartes] = useState(CARTES_DEFAUT);
   const [chargement, setChargement] = useState(true);
-  // Un compte créé via Google arrive sans pseudo (contrairement à l'inscription
-  // par email, où le formulaire le demande) : on bloque sur cet écran tant
-  // qu'il n'en a pas choisi un.
+  // Un compte Google arrive sans pseudo (contrairement à l'inscription email) :
+  // on bloque sur cet écran tant qu'il n'en a pas choisi un.
   const [pseudoManquant, setPseudoManquant] = useState(false);
   const [enregistrementPseudo, setEnregistrementPseudo] = useState(false);
   const [assistantOuvert, setAssistantOuvert] = useState(false);
 
   useEffect(() => {
     async function charger() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await attendreUtilisateur();
       if (!user) {
         router.replace("/connexion");
         return;
@@ -120,8 +131,7 @@ export default function Dashboard() {
       setCompletions(rc.data || []);
       setTypesObjectifs(rt.data || []);
       setProchainEvenement(rev.data?.[0] || null);
-      // Lu ici et pas dans le useState : localStorage n'existe pas au rendu
-      // serveur, et l'écran de chargement nous laisse le temps.
+      // Lu ici, pas dans le useState : localStorage n'existe pas au rendu serveur.
       setOrdreCartes(lireOrdre());
       setChargement(false);
     }
@@ -140,19 +150,17 @@ export default function Dashboard() {
     setEnregistrementPseudo(false);
   }
 
-  // Déplacées ici (plutôt que dans LifeMap) car le bouton de l'assistant IA
-  // vit à côté du « Bonjour » ; LifeMap les reçoit en props comme le reste
-  // de son état.
+  // Ici (plutôt que dans LifeMap) car le bouton de l'assistant IA vit à côté du
+  // « Bonjour » ; LifeMap la reçoit en props comme le reste de son état.
   async function ajouterListe(titre) {
-    const couleur = PALETTE[listes.length % PALETTE.length];
     const { data } = await supabase
       .from("listes")
-      .insert({ user_id: userId, titre, couleur, position: listes.length })
+      .insert({ user_id: userId, titre, couleur: PALETTE[listes.length % PALETTE.length], position: listes.length })
       .select()
       .single();
     if (data) setListes((l) => [...l, data]);
-    // Renvoyé pour l'assistant IA : il crée la liste puis y ajoute aussitôt
-    // les objectifs générés, avant que `listes` n'ait eu le temps de se mettre à jour.
+    // Renvoyé pour l'assistant IA : il crée la liste puis y ajoute aussitôt les
+    // objectifs générés, avant que `listes` n'ait eu le temps de se mettre à jour.
     return data?.id;
   }
 
@@ -228,22 +236,20 @@ export default function Dashboard() {
     ? Math.round((100 * faitsAujourdhui.length) / quotidiens.length)
     : 0;
   // La flamme compte les journées PLEINES (tous les quotidiens validés), pas la
-  // meilleure série d'un objectif isolé : à côté du « 2 faits · 5 restants »,
-  // une flamme qui viendrait d'une seule habitude se lirait de travers.
+  // meilleure série d'un objectif isolé.
   const serieComplete = serieJoursComplets(quotidiens, completions);
 
   // ── Carte 2 : objectifs terminés depuis le début, par type ──
-  // `typesObjectifs` est figé au chargement (il couvre les objectifs archivés),
-  // `objectifs` est l'état vivant : il contient ceux créés à l'instant. On fusionne
-  // les deux, sinon un objectif tout juste créé ne serait pas compté.
+  // `typesObjectifs` (figé, couvre les archivés) fusionné avec `objectifs`
+  // (état vivant) : sinon un objectif tout juste créé ne serait pas compté.
   const typeParObjectif = new Map([
     ...typesObjectifs.map((o) => [o.id, o.type]),
     ...objectifs.map((o) => [o.id, o.type]),
   ]);
   const parType = { quotidien: 0, hebdomadaire: 0, mensuel: 0, unique: 0, sansType: 0 };
   completions.forEach((c) => {
-    // `has` avant `get` : un type NULL est un objectif sans étiquette, qu'il
-    // faut compter, alors qu'un id inconnu est un objectif supprimé.
+    // `has` avant `get` : un type NULL est un objectif sans étiquette, à compter ;
+    // un id inconnu est un objectif supprimé.
     if (!typeParObjectif.has(c.objectif_id)) return;
     const ty = typeParObjectif.get(c.objectif_id) ?? "sansType";
     if (ty in parType) parType[ty] += 1;
@@ -251,14 +257,8 @@ export default function Dashboard() {
   const totalTermines = TYPES_STATS.reduce((s, { cle }) => s + parType[cle], 0);
   const maxCategorie = Math.max(1, ...TYPES_STATS.map(({ cle }) => parType[cle]));
 
-  // Niveau affiché sur la photo de profil. `typesObjectifs` couvre aussi les
-  // objectifs archivés, dont les validations comptent dans l'XP.
-  const niveau = niveauDepuisXp(calculerXp(typesObjectifs, completions));
-
-  // ── Réordonner les cartes ──
-  // On déplace la carte glissée à la place de celle qu'on survole, puis on
-  // enregistre. Même principe que les colonnes de la Life Map, en plus court :
-  // il n'y a rien à écrire en base.
+  // ── Réordonner les cartes ── On déplace la carte glissée à la place de celle
+  // survolée, puis on enregistre (rien à écrire en base, à la différence des colonnes).
   function deplacerCarte(cle, indexCible) {
     const ordre = [...ordreCartes];
     const depuis = ordre.indexOf(cle);
@@ -268,9 +268,8 @@ export default function Dashboard() {
     localStorage.setItem(CLE_ORDRE, JSON.stringify(ordre));
   }
 
-  // Le contenu de chaque carte, rangé par clé : c'est `ordreCartes` qui décide
-  // de l'ordre d'affichage. `classe` = ce qui diffère d'une carte à l'autre,
-  // le reste de l'habillage est commun et écrit une seule fois plus bas.
+  // Contenu de chaque carte par clé (`ordreCartes` décide de l'ordre). `classe`
+  // = ce qui diffère d'une carte à l'autre ; l'habillage commun est écrit plus bas.
   const contenuCartes = {
     journalier: {
       classe: "flex flex-col",
@@ -297,8 +296,7 @@ export default function Dashboard() {
             </JaugeCirculaire>
           </div>
 
-          {/* Combien de quotidiens faits aujourd'hui, et combien il en reste.
-              Le singulier/pluriel suit les règles de la langue courante. */}
+          {/* Quotidiens faits aujourd'hui et restants ; singulier/pluriel selon la langue. */}
           <p className="text-center text-[10px] md:text-xs leading-tight tabular-nums">
             <span className="font-bold text-teal-500">{faitsAujourdhui.length}</span>{" "}
             <span className="text-gray-400">
@@ -345,15 +343,12 @@ export default function Dashboard() {
                   className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full shrink-0"
                   style={{ backgroundColor: couleur }}
                 />
-                {/* Largeur flexible : une largeur fixe débordait de la carte
-                    depuis qu'elle a été rétrécie. */}
+                {/* Largeur flexible : une largeur fixe débordait de la carte rétrécie. */}
                 <span className="text-[10px] md:text-sm text-gray-300 flex-1 min-w-0 truncate">
                   {t.dashboard.categories[cle]}
                 </span>
-                {/* Largeur fixe plutôt que flexible : la barre garde une
-                    taille lisible et laisse le reste au libellé, qui doit
-                    pouvoir afficher « Hebdomadaire » en entier.
-                    Masquée sur mobile, où la carte est trop étroite. */}
+                {/* Barre : largeur fixe (reste lisible), le libellé prend le reste.
+                    Masquée sur mobile, carte trop étroite. */}
                 <span className="hidden md:block w-12 shrink-0 h-2 rounded-full bg-white/5">
                   <span
                     className="block h-2 rounded-full"
@@ -383,8 +378,7 @@ export default function Dashboard() {
 
           {prochainEvenement ? (
             <div className="mt-1.5 md:mt-4 flex flex-col md:flex-row md:items-center gap-0.5 md:gap-3">
-              {/* Mobile : la date tient sur une ligne. Le pavé sur trois
-                  lignes coûtait à lui seul le tiers de la hauteur. */}
+              {/* Mobile : la date tient sur une ligne (le pavé coûtait un tiers de la hauteur). */}
               <div className="md:hidden text-[10px] font-bold uppercase text-teal-500 leading-tight">
                 {formatJourCourt(prochainEvenement.jour, langue)}{" "}
                 {Number(prochainEvenement.jour.slice(8, 10))}{" "}
@@ -439,7 +433,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <NavbarApp pseudo={pseudo} avatarUrl={avatarUrl} niveau={niveau} />
+      <NavbarApp pseudo={pseudo} avatarUrl={avatarUrl} />
 
       <main className="max-w-[120rem] mx-auto px-[19px] md:px-[88px] py-10 text-white">
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -468,21 +462,15 @@ export default function Dashboard() {
           />
         )}
 
-        {/* Bandeau du haut : les cartes résumé et le panneau « à faire ».
-            L'ordre des quatre est libre, il est porté par la propriété CSS
-            `order` — l'ordre du HTML, lui, ne bouge pas. */}
+        {/* Bandeau du haut : cartes résumé et panneau « à faire ». L'ordre des
+            quatre est porté par la propriété CSS `order` ; le HTML ne bouge pas. */}
         <div className="mt-6 flex flex-col md:flex-row gap-4 md:items-stretch">
-          {/* Mobile : rangée des trois cartes qui défile horizontalement, le
-              panneau « à faire » restant en dessous (d'où le -order-1).
-              À partir de md : `contents` efface cette boîte, les cartes
-              deviennent des éléments de la rangée du dessus — c'est ce qui
-              permet à « à faire » de se glisser entre elles. */}
-          {/* À partir de md, les trois cartes font toutes un cinquième de la
-              rangée : largeur identique, un cran au-dessus de ce que réclame
-              leur contenu. Elles ne s'étirent pas pour remplir la rangée. */}
+          {/* Mobile : rangée des trois cartes qui défile, « à faire » en dessous
+              (-order-1). À partir de md : `contents` efface cette boîte, les cartes
+              rejoignent la rangée du dessus — « à faire » peut se glisser entre elles.
+              Les trois cartes font un cinquième de la rangée, sans s'étirer. */}
           <div className="flex md:contents -order-1 gap-4 overflow-x-auto md:overflow-visible pb-2 md:pb-0 defilement-listes">
-            {/* Chaque carte est glissable et sert aussi de cible : on la lâche
-                sur une autre pour prendre sa place. */}
+            {/* Chaque carte est glissable et sert de cible : on la lâche sur une autre. */}
             {ordreCartes.map((cle, index) =>
               cle === "aFaire" ? null : (
                 <section
@@ -505,10 +493,8 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Panneau « à faire ». Largeur fixée à 20 % de la rangée (il en
-              prenait 40) ; les trois cartes se partagent ce qui reste.
-              Ici on n'installe que la cible du dépôt : c'est l'en-tête du
-              panneau, à l'intérieur, qui sert de poignée. */}
+          {/* Panneau « à faire » (20 % de la rangée). On n'installe ici que la
+              cible du dépôt : l'en-tête, à l'intérieur, sert de poignée. */}
           <div
             style={{ order: ordreCartes.indexOf("aFaire") }}
             onDragOver={(e) => e.preventDefault()}

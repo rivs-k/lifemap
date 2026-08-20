@@ -8,7 +8,7 @@ Application de suivi d'objectifs personnels et de développement personnel — i
 - **Inscription / Connexion** — création de compte et authentification (email/mot de passe, Google/Apple/Microsoft), critères de mot de passe affichés en direct
 - **Dashboard (Life Map)** — listes d'objectifs personnalisables (quotidien, hebdomadaire, mensuel, unique), suivi par validations
 - **Agenda** — vue calendrier mensuelle des événements et objectifs, résumé du jour, statistiques du mois
-- **Profil** — niveau, XP, séries de jours d'affilée, statistiques détaillées, historique, archives des objectifs complétés
+- **Profil** — séries de jours d'affilée, statistiques (validations, meilleure série, objectifs actifs), archives des objectifs complétés
 - **Explorer** — objectifs communautaires que les utilisateurs rejoignent, avec votes et progression collective
 
 ## Stack
@@ -47,7 +47,7 @@ Le schéma SQL se trouve dans [`supabase/migrations/`](supabase/migrations/), à
 | `npm run build` | Build de production |
 | `npm run start` | Serveur de production |
 | `npm run lint` | ESLint |
-| `npm test` | Tests unitaires (séries, points/niveaux) |
+| `npm test` | Tests unitaires (séries) |
 
 ## Internationalisation
 

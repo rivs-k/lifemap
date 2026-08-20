@@ -1,12 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Ne jamais importer ce fichier depuis un composant "use client" : la clé n'a
-// pas le préfixe NEXT_PUBLIC_, elle ne doit exister que côté serveur (routes API).
-//
-// Initialisation paresseuse (et non au chargement du module, comme supabase.js) :
-// `next build` évalue les routes API pour collecter leurs métadonnées, avant que
-// les variables d'environnement d'exécution soient nécessairement présentes.
-// Lever l'erreur ici casserait le build ; on la reporte au premier appel réel.
+// Ne jamais importer depuis un composant "use client" : la clé n'a pas le
+// préfixe NEXT_PUBLIC_, elle ne doit exister que côté serveur (routes API).
+// Initialisation paresseuse : `next build` évalue les routes API avant que les
+// variables d'environnement soient forcément présentes — on reporte l'erreur
+// au premier appel réel plutôt que de casser le build.
 let client = null;
 
 export function getGemini() {

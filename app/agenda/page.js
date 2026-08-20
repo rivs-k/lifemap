@@ -6,7 +6,5 @@ import { useLangue } from "../components/LangueProvider";
 
 export default function Agenda() {
   const { t } = useLangue();
-  return (
-    <PageApp titre={t.agenda.titre}>{(userId) => <Calendrier userId={userId} />}</PageApp>
-  );
+  return <PageApp titre={t.agenda.titre}>{(userId) => <Calendrier userId={userId} />}</PageApp>;
 }

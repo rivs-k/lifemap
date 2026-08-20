@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { getGemini } from "../../lib/gemini";
 import { supabase } from "../../lib/supabase";
 
-// Schéma imposé à la réponse de Gemini (response_format.schema) : garantit un
-// JSON exploitable directement, sans parsing hasardeux d'un texte libre.
+// Schéma imposé à la réponse de Gemini : JSON exploitable directement.
 const SCHEMA = {
   type: "object",
   properties: {
@@ -32,8 +31,7 @@ export async function POST(request) {
     return NextResponse.json({ erreur: "non_authentifie" }, { status: 401 });
   }
 
-  // Vérifie le jeton auprès de Supabase Auth : seul un utilisateur connecté
-  // peut déclencher un appel (facturé, même sur le tier gratuit) à l'API Gemini.
+  // Seul un utilisateur connecté peut déclencher un appel (facturé) à Gemini.
   const { data, error: erreurAuth } = await supabase.auth.getUser(jeton);
   if (erreurAuth || !data?.user) {
     return NextResponse.json({ erreur: "non_authentifie" }, { status: 401 });
@@ -72,8 +70,7 @@ export async function POST(request) {
   }
 
   try {
-    const resultat = JSON.parse(interaction.output_text);
-    return NextResponse.json(resultat);
+    return NextResponse.json(JSON.parse(interaction.output_text));
   } catch {
     return NextResponse.json({ erreur: "reponse_invalide" }, { status: 502 });
   }

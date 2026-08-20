@@ -8,8 +8,7 @@ const ContexteLangue = createContext(null);
 export function LangueProvider({ children }) {
   const [langue, setLangue] = useState("fr");
 
-  // Garde <html lang> synchronisé : les lecteurs d'écran s'en servent
-  // pour choisir la bonne prononciation.
+  // Garde <html lang> synchronisé pour les lecteurs d'écran.
   useEffect(() => {
     document.documentElement.lang = langue;
   }, [langue]);

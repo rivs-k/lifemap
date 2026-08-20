@@ -9,7 +9,6 @@ export default function Home() {
 
   return (
     <main className="text-white">
-      {/* HERO */}
       <section className="min-h-screen flex flex-col items-center justify-center text-center px-6">
         <Image
           src="/logo-icon.png"
@@ -28,7 +27,6 @@ export default function Home() {
         <p className="mt-4 text-lg text-gray-300">{t.slogan}</p>
       </section>
 
-      {/* FONCTIONNALITÉS */}
       <section className="py-48 px-8 md:px-20 grid md:grid-cols-2 gap-24 items-center">
         <ul
           style={{ fontFamily: "var(--font-oswald)" }}
@@ -49,7 +47,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA FINAL */}
       <section className="min-h-screen flex flex-col items-center justify-center text-center px-6">
         <h2
           style={{ fontFamily: "var(--font-oswald)" }}

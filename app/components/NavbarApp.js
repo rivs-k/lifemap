@@ -5,9 +5,8 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useLangue } from "./LangueProvider";
 import SelecteurLangue from "./SelecteurLangue";
-import PastilleNiveau from "./PastilleNiveau";
 
-export default function NavbarApp({ pseudo, avatarUrl, niveau }) {
+export default function NavbarApp({ pseudo, avatarUrl }) {
   const { t } = useLangue();
   const pathname = usePathname();
   const initiale = (pseudo || "?").charAt(0).toUpperCase();
@@ -24,8 +23,7 @@ export default function NavbarApp({ pseudo, avatarUrl, niveau }) {
   return (
     <header className="sticky top-0 z-20 bg-black/50 backdrop-blur-md border-b border-white/10">
       <div className="max-w-[120rem] mx-auto flex items-center justify-between gap-2 px-[19px] sm:px-6 md:px-[88px] py-4">
-        {/* Bascule FR/ENG + logo. Sans elle, on ne pouvait plus changer de
-            langue une fois connecté : la navbar publique est masquée ici. */}
+        {/* Bascule FR/ENG + logo : seul moyen de changer de langue une fois connecté. */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <SelecteurLangue />
 
@@ -40,7 +38,6 @@ export default function NavbarApp({ pseudo, avatarUrl, niveau }) {
           </Link>
         </div>
 
-        {/* Onglets */}
         <nav className="flex gap-1 sm:gap-2">
           {onglets.map(({ href, label, actif }) => (
             <Link
@@ -58,14 +55,12 @@ export default function NavbarApp({ pseudo, avatarUrl, niveau }) {
           ))}
         </nav>
 
-        {/* Notifications + menu utilisateur */}
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <Link
             href="/profil"
             className="flex items-center gap-2 rounded-full transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
           >
-            {/* `relative` : sert de repère à la pastille de niveau */}
-            <span className="relative shrink-0">
+            <span className="shrink-0">
               {avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- image distante (Supabase Storage) : next/image imposerait de déclarer le domaine
                 <img
@@ -81,8 +76,6 @@ export default function NavbarApp({ pseudo, avatarUrl, niveau }) {
                   {initiale}
                 </span>
               )}
-
-              {niveau != null && <PastilleNiveau niveau={niveau} libelle={t.profil.niveau} />}
             </span>
             <span className="text-sm font-bold hidden sm:inline">{pseudo}</span>
             <span aria-hidden="true" className="hidden sm:inline text-gray-400 text-xs">

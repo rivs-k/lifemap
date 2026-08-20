@@ -1,6 +1,5 @@
-// Icône « archiver » : dossier ouvert, au trait.
-// Dessinée en SVG plutôt qu'en emoji : elle hérite de la couleur du texte
-// (donc elle s'éclaircit au survol comme le reste) et reste nette à toute taille.
+// Icône « archiver » : dossier ouvert, au trait. En SVG (pas emoji) pour hériter
+// de la couleur du texte et rester net à toute taille.
 export default function IconeDossier({ className = "w-[18px] h-[18px]" }) {
   return (
     <svg

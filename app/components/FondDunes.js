@@ -2,13 +2,9 @@
 
 import { useEffect, useRef } from "react";
 
-// L'image défile à 15 % de la vitesse du contenu : plus le facteur est bas,
-// plus l'image paraît lointaine.
+// L'image défile à 15 % de la vitesse du contenu : plus bas = plus lointain.
 const FACTEUR = 0.15;
-
-// L'image doit être plus haute que l'écran pour avoir de la marge : en montant,
-// elle découvrirait sinon du vide en bas de page. 130vh couvre le déplacement
-// maximal de la page la plus longue (l'accueil, ~3 écrans).
+// Plus haute que l'écran pour ne pas découvrir de vide en montant (page la plus longue : l'accueil).
 const HAUTEUR = "130vh";
 
 export default function FondDunes() {
@@ -19,8 +15,7 @@ export default function FondDunes() {
     let enAttente = false;
 
     function auScroll() {
-      // L'événement scroll se déclenche bien plus souvent que les rafraîchissements
-      // d'écran : on ne garde qu'un calcul par frame.
+      // Un seul calcul par frame (scroll se déclenche bien plus souvent).
       if (enAttente) return;
       enAttente = true;
       requestAnimationFrame(() => {

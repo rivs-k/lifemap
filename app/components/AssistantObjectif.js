@@ -7,9 +7,6 @@ import { useLangue } from "./LangueProvider";
 const TYPES = ["quotidien", "hebdomadaire", "mensuel", "unique"];
 const NOUVELLE_LISTE = "__nouvelle__";
 
-// Modale déclenchée depuis la Life Map : décrit un objectif large, l'IA
-// propose des sous-objectifs (nom, type, emoji) qu'on peut cocher, corriger,
-// puis ajouter en une fois — à une liste existante ou à une toute nouvelle.
 export default function AssistantObjectif({ listes, onAjouterListe, onAjouterObjectifs, onFermer }) {
   const { t } = useLangue();
   const [texte, setTexte] = useState("");
@@ -18,7 +15,7 @@ export default function AssistantObjectif({ listes, onAjouterListe, onAjouterObj
   const [chargement, setChargement] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState(null);
-  // null tant que rien n'a été généré : distingue l'étape « saisie » de l'étape « résultats ».
+  // null tant que rien n'a été généré : distingue « saisie » de « résultats ».
   const [suggestions, setSuggestions] = useState(null);
 
   async function generer(e) {
@@ -28,9 +25,7 @@ export default function AssistantObjectif({ listes, onAjouterListe, onAjouterObj
     setErreur(null);
     setChargement(true);
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const { data: { session } } = await supabase.auth.getSession();
 
     let reponse;
     try {

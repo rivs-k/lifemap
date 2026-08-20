@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import NavbarApp from "../components/NavbarApp";
 import Archive from "../components/Archive";
-import PastilleNiveau from "../components/PastilleNiveau";
 import { useLangue } from "../components/LangueProvider";
 import { calculerSerie } from "../lib/periodes";
-import { calculerXp, progressionNiveau } from "../lib/points";
+import { tempsRelatif } from "../lib/dates";
 
 const TAILLE_MAX = 2 * 1024 * 1024; // 2 Mo
 
@@ -19,12 +19,8 @@ export default function Profil() {
 
   const [userId, setUserId] = useState(null);
   const [profil, setProfil] = useState(null);
-  const [stats, setStats] = useState({
-    validations: 0,
-    meilleureSerie: 0,
-    objectifs: 0,
-    xp: 0,
-  });
+  const [stats, setStats] = useState({ validations: 0, meilleureSerie: 0, objectifs: 0 });
+  const [activite, setActivite] = useState([]);
   const [editionPseudo, setEditionPseudo] = useState(false);
   const [pseudoSaisi, setPseudoSaisi] = useState("");
   const [envoiPhoto, setEnvoiPhoto] = useState(false);
@@ -33,30 +29,34 @@ export default function Profil() {
 
   useEffect(() => {
     async function charger() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        router.replace("/connexion");
-        return;
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return router.replace("/connexion");
       setUserId(user.id);
 
       // select("*") : la page reste fonctionnelle même si la colonne
       // avatar_url n'a pas encore été ajoutée par la migration.
       const [rp, ro, rc] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-        // Tous les objectifs, archivés compris : leurs validations ont été
-        // gagnées, elles comptent donc dans l'XP.
-        supabase.from("objectifs").select("id, type, archive"),
-        supabase.from("completions").select("objectif_id, periode"),
+        supabase.from("objectifs").select("id, nom, emoji, type, archive, cree_le"),
+        supabase.from("completions").select("objectif_id, periode, cree_le"),
       ]);
 
       const objectifs = ro.data || [];
-      const actifs = objectifs.filter((o) => !o.archive);
       const completions = rc.data || [];
+      const actifs = objectifs.filter((o) => !o.archive);
       const periodesDe = (id) =>
         completions.filter((c) => c.objectif_id === id).map((c) => c.periode);
+
+      // Flux fusionné création + validation, du plus récent au plus ancien.
+      const parId = new Map(objectifs.map((o) => [o.id, o]));
+      const evenements = [
+        ...objectifs.map((o) => ({ genre: "cree", date: o.cree_le, o })),
+        ...completions
+          .filter((c) => parId.has(c.objectif_id))
+          .map((c) => ({ genre: "valide", date: c.cree_le, o: parId.get(c.objectif_id) })),
+      ]
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 8);
 
       setProfil({ email: user.email, ...rp.data });
       setStats({
@@ -66,8 +66,8 @@ export default function Profil() {
           (max, o) => Math.max(max, calculerSerie(o.type, periodesDe(o.id))),
           0,
         ),
-        xp: calculerXp(objectifs, completions),
       });
+      setActivite(evenements);
       setChargement(false);
     }
     charger();
@@ -87,14 +87,8 @@ export default function Profil() {
     if (!fichier) return;
 
     setErreur(null);
-    if (!fichier.type.startsWith("image/")) {
-      setErreur(t.profil.photoInvalide);
-      return;
-    }
-    if (fichier.size > TAILLE_MAX) {
-      setErreur(t.profil.photoTropLourde);
-      return;
-    }
+    if (!fichier.type.startsWith("image/")) return setErreur(t.profil.photoInvalide);
+    if (fichier.size > TAILLE_MAX) return setErreur(t.profil.photoTropLourde);
 
     setEnvoiPhoto(true);
     const extension = (fichier.name.split(".").pop() || "png").toLowerCase();
@@ -127,6 +121,33 @@ export default function Profil() {
     router.push("/connexion");
   }
 
+  // Export RGPD : télécharge toutes ses données en JSON. La RLS garantit qu'on
+  // ne récupère que ses propres lignes.
+  async function exporterDonnees() {
+    const [rp, rl, ro, rc, rev] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+      supabase.from("listes").select("*"),
+      supabase.from("objectifs").select("*"),
+      supabase.from("completions").select("*"),
+      supabase.from("evenements").select("*"),
+    ]);
+    const donnees = {
+      exporte_le: new Date().toISOString(),
+      profil: rp.data,
+      listes: rl.data,
+      objectifs: ro.data,
+      completions: rc.data,
+      evenements: rev.data,
+    };
+    const blob = new Blob([JSON.stringify(donnees, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const lien = document.createElement("a");
+    lien.href = url;
+    lien.download = "lifemap-donnees.json";
+    lien.click();
+    URL.revokeObjectURL(url);
+  }
+
   if (chargement) {
     return (
       <main className="min-h-screen flex items-center justify-center text-white px-6">
@@ -142,13 +163,7 @@ export default function Profil() {
       )
     : null;
 
-  // Niveau et XP sont calculés depuis l'historique, pas lus en base : décocher
-  // un objectif retire donc ses points automatiquement.
-  const progression = progressionNiveau(stats.xp);
-
   const cartes = [
-    { libelle: t.profil.niveau, valeur: progression.niveau },
-    { libelle: t.profil.xp, valeur: stats.xp },
     { libelle: t.profil.validations, valeur: stats.validations },
     { libelle: t.profil.meilleureSerie, valeur: stats.meilleureSerie },
     { libelle: t.profil.objectifsActifs, valeur: stats.objectifs },
@@ -156,14 +171,9 @@ export default function Profil() {
 
   return (
     <>
-      <NavbarApp
-        pseudo={profil.pseudo}
-        avatarUrl={profil.avatar_url}
-        niveau={progression.niveau}
-      />
+      <NavbarApp pseudo={profil.pseudo} avatarUrl={profil.avatar_url} />
 
       <main className="max-w-3xl mx-auto px-6 py-10 text-white">
-        {/* En-tête : photo + identité */}
         <div className="flex flex-wrap items-center gap-6">
           <div className="relative">
             {profil.avatar_url ? (
@@ -199,12 +209,6 @@ export default function Profil() {
               accept="image/*"
               onChange={changerPhoto}
               className="hidden"
-            />
-
-            <PastilleNiveau
-              niveau={progression.niveau}
-              libelle={t.profil.niveau}
-              taille="grande"
             />
           </div>
 
@@ -245,32 +249,42 @@ export default function Profil() {
           </div>
         </div>
 
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            href="/parametres"
+            className="border border-gray-600 hover:border-teal-500 transition text-sm font-bold px-6 py-3 rounded-full focus:outline-none focus-visible:border-teal-500"
+          >
+            {t.parametres.titre}
+          </Link>
+          <button
+            type="button"
+            onClick={deconnexion}
+            className="border border-gray-600 hover:border-teal-500 transition text-sm font-bold px-6 py-3 rounded-full focus:outline-none focus-visible:border-teal-500"
+          >
+            {t.profil.deconnexion}
+          </button>
+        </div>
+
         {erreur && (
           <p role="alert" className="mt-4 text-sm text-red-400">
             {erreur}
           </p>
         )}
 
-        {/* Progression vers le niveau suivant */}
-        <div className="mt-8">
-          <div className="flex items-baseline justify-between text-sm">
-            <span className="font-bold">
-              {t.profil.niveau} {progression.niveau}
-            </span>
-            <span className="text-gray-400 tabular-nums">
-              {progression.xpDansNiveau} / {progression.xpRequis} {t.profil.xp}
-            </span>
-          </div>
-          <div className="mt-2 h-2.5 rounded-full bg-white/5">
-            <div
-              className="h-2.5 rounded-full bg-teal-600 transition-all"
-              style={{ width: `${progression.pourcentage}%` }}
-            />
-          </div>
-        </div>
+        <section className="mt-8">
+          <h2 className="font-bold text-lg">{t.profil.rgpd.titre}</h2>
+          <p className="mt-2 text-sm text-gray-400 max-w-2xl">{t.profil.rgpd.texte}</p>
+          <button
+            type="button"
+            onClick={exporterDonnees}
+            className="mt-4 border border-gray-600 hover:border-teal-500 transition text-sm font-bold px-6 py-3 rounded-full focus:outline-none focus-visible:border-teal-500"
+          >
+            {t.profil.rgpd.exporter}
+          </button>
+        </section>
 
-        {/* Statistiques */}
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <h2 className="mt-10 font-bold text-lg">{t.profil.statistiques}</h2>
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
           {cartes.map(({ libelle, valeur }) => (
             <div
               key={libelle}
@@ -282,15 +296,32 @@ export default function Profil() {
           ))}
         </div>
 
-        <Archive />
+        {activite.length > 0 && (
+          <section className="mt-12 text-left">
+            <h2 className="font-bold text-lg">{t.profil.activite.titre}</h2>
+            <ul className="mt-4 flex flex-col gap-2">
+              {activite.map((e) => (
+                <li
+                  key={`${e.genre}-${e.o.id}-${e.date}`}
+                  className="flex items-center gap-3 bg-gray-900/60 border border-gray-800 rounded-xl p-3"
+                >
+                  <span aria-hidden="true" className="text-teal-500 shrink-0">
+                    {e.genre === "valide" ? "✓" : "+"}
+                  </span>
+                  {e.o.emoji && <span aria-hidden="true">{e.o.emoji}</span>}
+                  <span className="flex-1 min-w-0 truncate">{e.o.nom}</span>
+                  <span className="text-xs text-gray-500 shrink-0">
+                    {e.genre === "valide" ? t.profil.activite.valide : t.profil.activite.cree}
+                    {" · "}
+                    {tempsRelatif(e.date, langue)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
-        <button
-          type="button"
-          onClick={deconnexion}
-          className="mt-12 border border-gray-600 hover:border-teal-500 transition text-sm font-bold px-6 py-3 rounded-full focus:outline-none focus-visible:border-teal-500"
-        >
-          {t.profil.deconnexion}
-        </button>
+        <Archive />
       </main>
     </>
   );

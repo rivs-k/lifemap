@@ -5,10 +5,9 @@ import { supabase } from "../lib/supabase";
 import { useLangue } from "./LangueProvider";
 
 function cle(d) {
-  const a = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const j = String(d.getDate()).padStart(2, "0");
-  return `${a}-${m}-${j}`;
+  return `${d.getFullYear()}-${m}-${j}`;
 }
 
 function depuisCle(k) {
@@ -23,18 +22,12 @@ function lundiDeLaSemaine(d) {
 }
 
 // Dernier jour couvert (le jour de début si l'événement tient sur une journée).
-function dernierJour(ev) {
-  return ev.jour_fin || ev.jour;
-}
+const dernierJour = (ev) => ev.jour_fin || ev.jour;
 
 // Les clés étant au format ISO, comparer les chaînes revient à comparer les dates.
-function couvre(ev, k) {
-  return ev.jour <= k && k <= dernierJour(ev);
-}
+const couvre = (ev, k) => ev.jour <= k && k <= dernierJour(ev);
 
-function surPlusieursJours(ev) {
-  return Boolean(ev.jour_fin) && ev.jour_fin !== ev.jour;
-}
+const surPlusieursJours = (ev) => Boolean(ev.jour_fin) && ev.jour_fin !== ev.jour;
 
 function formatPlage(ev, langue) {
   const f = new Intl.DateTimeFormat(langue, { day: "numeric", month: "short" });
@@ -48,9 +41,9 @@ function formatHoraire(ev, t) {
   return fin ? `${debut} - ${fin}` : debut;
 }
 
-// Découpe les événements d'une semaine en bandeaux : un seul élément qui
-// s'étend sur plusieurs colonnes, au lieu d'une pastille par jour.
-// Un événement à cheval sur deux semaines produit un bandeau par semaine.
+// Découpe les événements d'une semaine en bandeaux : un élément étendu sur
+// plusieurs colonnes plutôt qu'une pastille par jour. Un événement à cheval sur
+// deux semaines produit un bandeau par semaine.
 function bandeauxDeLaSemaine(semaine, evenements) {
   const debutSemaine = cle(semaine[0]);
   const finSemaine = cle(semaine[6]);
@@ -59,8 +52,7 @@ function bandeauxDeLaSemaine(semaine, evenements) {
     .filter((e) => e.jour <= finSemaine && dernierJour(e) >= debutSemaine)
     .sort((a, b) => (a.jour < b.jour ? -1 : a.jour > b.jour ? 1 : 0));
 
-  // Empilement : un bandeau se place sur la première ligne libre, pour que
-  // deux événements simultanés ne se superposent pas.
+  // Empilement : un bandeau se place sur la première ligne libre.
   const finParLigne = [];
 
   return concernes.map((e) => {
@@ -86,8 +78,8 @@ function bandeauxDeLaSemaine(semaine, evenements) {
 
 export default function Calendrier({ userId }) {
   const { t, langue } = useLangue();
-  // null tant que le composant n'est pas monté : évite que le rendu serveur
-  // et le rendu client ne tombent pas sur le même jour.
+  // null tant que le composant n'est pas monté : évite un décalage d'hydratation
+  // (le rendu serveur ne tomberait pas sur le même jour que le client).
   const [mois, setMois] = useState(null);
   const [selection, setSelection] = useState(null);
   const [evenements, setEvenements] = useState([]);
@@ -95,9 +87,8 @@ export default function Calendrier({ userId }) {
   const [chargement, setChargement] = useState(true);
 
   useEffect(() => {
-    // Initialisation après montage, volontairement : la page est prérendue au
-    // build, donc une date calculée pendant le rendu serveur serait fausse dans
-    // le navigateur (décalage d'hydratation). L'état reste null jusqu'au montage.
+    // Initialisation après montage : la page est prérendue au build, donc une
+    // date calculée côté serveur serait fausse dans le navigateur.
     const n = new Date();
     /* eslint-disable react-hooks/set-state-in-effect -- date disponible seulement côté client */
     setMois(new Date(n.getFullYear(), n.getMonth(), 1));
@@ -116,8 +107,8 @@ export default function Calendrier({ userId }) {
       const dernier = new Date(mois.getFullYear(), mois.getMonth() + 1, 0);
 
       const [re, rc] = await Promise.all([
-        // Tout événement qui CHEVAUCHE le mois : il peut avoir commencé avant
-        // et se poursuivre dedans. Un simple intervalle sur `jour` les raterait.
+        // Tout événement qui CHEVAUCHE le mois : il peut avoir commencé avant et
+        // se poursuivre dedans. Un simple intervalle sur `jour` les raterait.
         supabase
           .from("evenements")
           .select("*")
@@ -191,7 +182,7 @@ export default function Calendrier({ userId }) {
     year: "numeric",
   }).format(premier);
   const formatJourCourt = new Intl.DateTimeFormat(langue, { weekday: "short" });
-  // 1er janvier 2024 était un lundi : sert de base aux en-têtes de colonnes.
+  // 1er janvier 2024 était un lundi : base des en-têtes de colonnes.
   const entetes = Array.from({ length: 7 }, (_, i) =>
     formatJourCourt.format(new Date(2024, 0, 1 + i)),
   );

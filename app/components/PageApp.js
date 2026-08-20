@@ -5,15 +5,11 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { useLangue } from "./LangueProvider";
 import NavbarApp from "./NavbarApp";
-import { calculerXp, niveauDepuisXp } from "../lib/points";
 
-// Coquille commune aux pages de l'app connectée (Agenda, Explorer).
-// Elle regroupe ce que ces pages partageaient mot pour mot :
-//   1. la garde d'authentification (rediriger vers /connexion si non connecté) ;
-//   2. le chargement des infos affichées par la navbar (pseudo, avatar, badge) ;
-//   3. la mise en page (navbar + titre + conteneur).
-// Le contenu propre à chaque page est fourni via une fonction enfant qui
-// reçoit l'identifiant de l'utilisateur :  <PageApp titre="…">{(userId) => …}</PageApp>
+// Coquille commune aux pages connectées (Agenda, Explorer) : garde d'auth,
+// chargement des infos de la navbar (pseudo, avatar) et mise en page. Le
+// contenu est une fonction enfant recevant l'userId :
+//   <PageApp titre="…">{(userId) => …}</PageApp>
 export default function PageApp({ titre, children }) {
   const { t } = useLangue();
   const router = useRouter();
@@ -22,26 +18,19 @@ export default function PageApp({ titre, children }) {
 
   useEffect(() => {
     async function charger() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        router.replace("/connexion");
-        return;
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return router.replace("/connexion");
 
-      // Objectifs archivés compris : leurs validations comptent dans l'XP.
-      const [rp, ro, rc] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-        supabase.from("objectifs").select("id, type"),
-        supabase.from("completions").select("objectif_id, periode"),
-      ]);
+      const rp = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
 
       setDonnees({
         userId: user.id,
         pseudo: rp.data?.pseudo || user.email,
         avatarUrl: rp.data?.avatar_url || null,
-        niveau: niveauDepuisXp(calculerXp(ro.data || [], rc.data || [])),
       });
     }
     charger();
@@ -57,11 +46,7 @@ export default function PageApp({ titre, children }) {
 
   return (
     <>
-      <NavbarApp
-        pseudo={donnees.pseudo}
-        avatarUrl={donnees.avatarUrl}
-        niveau={donnees.niveau}
-      />
+      <NavbarApp pseudo={donnees.pseudo} avatarUrl={donnees.avatarUrl} />
 
       <main className="max-w-[120rem] mx-auto px-[19px] md:px-[88px] py-10 text-white">
         <h1

@@ -17,12 +17,10 @@ export default function MotDePasseOublie() {
 
     const email = new FormData(e.target).get("email");
     await supabase.auth.resetPasswordForEmail(email, {
-      // Où Supabase renvoie l'utilisateur après le clic sur le lien du mail.
       redirectTo: `${window.location.origin}/nouveau-mot-de-passe`,
     });
 
-    // On affiche le même message quoi qu'il arrive, y compris en cas d'erreur :
-    // dire « cet email est inconnu » permettrait de deviner qui a un compte.
+    // Même message en cas d'erreur : ne pas révéler qui a un compte.
     setChargement(false);
     setEnvoye(true);
   }

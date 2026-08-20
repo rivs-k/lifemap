@@ -18,9 +18,8 @@ export default function NouveauMotDePasse() {
   const [chargement, setChargement] = useState(false);
 
   useEffect(() => {
-    // Le lien du mail contient un jeton de récupération : supabase-js le
-    // détecte dans l'URL et ouvre une session temporaire. Elle seule autorise
-    // à changer le mot de passe sans connaître l'ancien.
+    // Jeton de récupération dans l'URL : supabase-js ouvre une session
+    // temporaire, seule autorisée à changer le mot de passe sans l'ancien.
     const { data } = supabase.auth.onAuthStateChange((evenement, session) => {
       if (evenement === "PASSWORD_RECOVERY" || session) setPret(true);
     });
@@ -42,13 +41,8 @@ export default function NouveauMotDePasse() {
     setChargement(true);
     const { error } = await supabase.auth.updateUser({ password: motdepasse });
     setChargement(false);
-
-    if (error) {
-      setErreur(error.message);
-      return;
-    }
-    // La session de récupération devient une session normale : on peut
-    // envoyer l'utilisateur directement dans l'app.
+    if (error) return setErreur(error.message);
+    // La session de récupération est devenue normale : direction l'app.
     router.push("/dashboard");
   }
 
@@ -93,12 +87,7 @@ export default function NouveauMotDePasse() {
                 {t.inscription.criteres.map((label, i) => {
                   const valide = TESTS_CRITERES[i](motdepasse);
                   return (
-                    <li
-                      key={label}
-                      className={`flex items-center gap-2 text-sm transition ${
-                        valide ? "text-teal-500" : "text-gray-400"
-                      }`}
-                    >
+                    <li key={label} className={`flex items-center gap-2 text-sm transition ${valide ? "text-teal-500" : "text-gray-400"}`}>
                       <span aria-hidden="true">{valide ? "✓" : "○"}</span>
                       {label}
                     </li>

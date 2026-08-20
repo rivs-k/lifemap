@@ -1,8 +1,5 @@
-// Jauge circulaire (donut) pour une valeur unique en pourcentage.
-//
-// La taille vient du CSS (classe passée par l'appelant), pas d'une valeur en
-// JavaScript : c'est ce qui permet de la réduire sur mobile via un point de
-// rupture. Le dessin utilise un repère fixe de 100×100 que le viewBox étire.
+// Jauge circulaire (donut) pour une valeur en pourcentage. La taille vient du
+// CSS (className) ; le dessin utilise un repère fixe de 100×100 que le viewBox étire.
 const REPERE = 100;
 
 export default function JaugeCirculaire({

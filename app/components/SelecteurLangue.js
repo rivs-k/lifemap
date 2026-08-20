@@ -2,9 +2,7 @@
 
 import { useLangue } from "./LangueProvider";
 
-// Bascule FR/ENG. Les deux langues restent affichées, l'active en turquoise :
-// un bouton n'affichant que « FR » serait ambigu (langue courante ou cible ?).
-// Dimensions réduites sous `sm` car la barre de nav de l'app y est très serrée.
+// Bascule FR/ENG. Les deux langues restent affichées, l'active en turquoise.
 export default function SelecteurLangue() {
   const { langue, basculer, t } = useLangue();
 

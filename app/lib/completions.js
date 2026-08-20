@@ -1,15 +1,10 @@
 import { supabase } from "./supabase";
 import { periodeCourante, estFaitMaintenant } from "./periodes";
 
-// Coche / décoche un objectif pour sa période en cours.
-//
-// Partagé par la Life Map et le panneau « À faire aujourd'hui » : les deux
-// doivent écrire exactement la même chose. Dupliquer cette logique ferait
-// diverger les compteurs au premier correctif appliqué d'un seul côté.
-//
-// Cocher = insérer une validation, décocher = la supprimer. Il n'y a pas de
-// booléen « fait » en base : c'est la présence de la ligne qui fait foi, ce
-// qui rend la remise à zéro (minuit, lundi, 1er du mois) automatique.
+// Coche / décoche un objectif pour sa période en cours. Partagé par la Life Map
+// et le panneau « À faire aujourd'hui » pour garder les compteurs cohérents.
+// Il n'y a pas de booléen « fait » en base : la présence de la ligne fait foi,
+// ce qui rend la remise à zéro (minuit, lundi, 1er du mois) automatique.
 export async function basculerCompletion({ objectif, userId, completions, setCompletions }) {
   const periode = periodeCourante(objectif.type);
   const periodes = completions

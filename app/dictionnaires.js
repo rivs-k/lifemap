@@ -1,6 +1,3 @@
-// Tous les textes de l'interface, par langue.
-// Ajouter une langue = ajouter une clé ici, rien d'autre à toucher.
-
 export const textes = {
   fr: {
     changerLangue: "Passer en anglais",
@@ -8,7 +5,6 @@ export const textes = {
       seConnecter: "Se connecter",
       sEnregistrer: "S’enregistrer",
     },
-    // Le slogan est une signature de marque : identique dans les deux langues.
     slogan: "Every goal start with plan.",
     objectifs: [
       "Définissez vos objectifs",
@@ -76,8 +72,6 @@ export const textes = {
     },
     profil: {
       titre: "Profil",
-      niveau: "Niveau",
-      xp: "XP",
       chargement: "Chargement…",
       deconnexion: "Se déconnecter",
       changerPhoto: "Changer la photo",
@@ -88,6 +82,13 @@ export const textes = {
       validations: "Validations",
       meilleureSerie: "Meilleure série",
       objectifsActifs: "Objectifs actifs",
+      statistiques: "Statistiques",
+      activite: {
+        titre: "Activité récente",
+        vide: "Aucune activité pour l’instant.",
+        cree: "Créé",
+        valide: "Validé",
+      },
       archive: {
         titre: "Archive",
         vide: "Aucun objectif archivé.",
@@ -97,6 +98,24 @@ export const textes = {
         versListe: "Restaurer vers la liste",
         avertissement: "La suppression définitive efface aussi l’historique de validations.",
       },
+      rgpd: {
+        titre: "Mes données (RGPD)",
+        texte:
+          "LifeMap ne stocke que ce que tu crées : ton profil (pseudo, email, photo), tes objectifs, listes, validations et événements. Ces données ne sont jamais partagées avec des tiers. Tu peux les modifier ici (pseudo, photo), les exporter ci-dessous, ou tout supprimer depuis les Paramètres.",
+        exporter: "Télécharger mes données",
+      },
+    },
+    parametres: {
+      titre: "Paramètres",
+      langue: "Langue",
+      motDePasse: "Mot de passe",
+      motDePasseBouton: "Mettre à jour",
+      motDePasseSucces: "Mot de passe mis à jour.",
+      compte: "Compte & confidentialité",
+      supprimerAvertissement:
+        "La suppression du compte efface définitivement toutes tes données (objectifs, listes, historique). Cette action est irréversible.",
+      supprimerCompte: "Supprimer mon compte",
+      supprimerConfirmer: "Confirmer la suppression ?",
     },
     dashboard: {
       lifeMapNav: "Life Map",
@@ -128,6 +147,7 @@ export const textes = {
       nomListe: "Nom de la liste",
       nomItem: "Nom de l’objectif",
       typeObjectif: "Type",
+      erreurAjoutObjectif: "Impossible d’ajouter l’objectif :",
       supprimerListe: "Supprimer la liste",
       deplacerListe: "Glisser pour déplacer la liste",
       deplacerCarte: "Glisser pour déplacer la carte",
@@ -152,15 +172,12 @@ export const textes = {
       annuler: "Annuler",
       erreur: "L’assistant n’a pas pu générer de suggestions. Réessaie.",
     },
-    // Étape post-connexion Google : le pseudo n'existe que si l'inscription
-    // s'est faite par email (formulaire dédié) — un compte Google arrive sans.
     choixPseudo: {
       titre: "Choisis un pseudo",
       intro: "Comment veux-tu apparaître dans LifeMap ?",
       placeholder: "Ton pseudo",
       bouton: "Continuer",
     },
-    // Champs et libellés communs aux pages connexion et inscription.
     auth: {
       ou: "ou",
       continuerAvec: "Continuer avec",
@@ -184,7 +201,6 @@ export const textes = {
       titre: "Mot de passe oublié",
       intro: "Indique ton email : tu recevras un lien pour choisir un nouveau mot de passe.",
       bouton: "Envoyer le lien",
-      // Volontairement neutre : ne jamais révéler si un compte existe.
       envoye:
         "Si un compte existe avec cet email, un lien vient d’être envoyé. Pense à regarder tes indésirables.",
       retour: "Retour à la connexion",
@@ -288,8 +304,6 @@ export const textes = {
     },
     profil: {
       titre: "Profile",
-      niveau: "Level",
-      xp: "XP",
       chargement: "Loading…",
       deconnexion: "Sign out",
       changerPhoto: "Change photo",
@@ -300,6 +314,13 @@ export const textes = {
       validations: "Completions",
       meilleureSerie: "Best streak",
       objectifsActifs: "Active goals",
+      statistiques: "Statistics",
+      activite: {
+        titre: "Recent activity",
+        vide: "No activity yet.",
+        cree: "Created",
+        valide: "Completed",
+      },
       archive: {
         titre: "Archive",
         vide: "No archived goals.",
@@ -309,6 +330,24 @@ export const textes = {
         versListe: "Restore to list",
         avertissement: "Permanent deletion also erases the completion history.",
       },
+      rgpd: {
+        titre: "My data (GDPR)",
+        texte:
+          "LifeMap only stores what you create: your profile (username, email, photo), your goals, lists, completions and events. This data is never shared with third parties. You can edit it here (username, photo), export it below, or delete everything from Settings.",
+        exporter: "Download my data",
+      },
+    },
+    parametres: {
+      titre: "Settings",
+      langue: "Language",
+      motDePasse: "Password",
+      motDePasseBouton: "Update",
+      motDePasseSucces: "Password updated.",
+      compte: "Account & privacy",
+      supprimerAvertissement:
+        "Deleting your account permanently erases all your data (goals, lists, history). This action cannot be undone.",
+      supprimerCompte: "Delete my account",
+      supprimerConfirmer: "Confirm deletion?",
     },
     dashboard: {
       lifeMapNav: "Life Map",
@@ -340,6 +379,7 @@ export const textes = {
       nomListe: "List name",
       nomItem: "Goal name",
       typeObjectif: "Type",
+      erreurAjoutObjectif: "Couldn’t add the goal:",
       supprimerListe: "Delete list",
       deplacerListe: "Drag to move the list",
       deplacerCarte: "Drag to move the card",

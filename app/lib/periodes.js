@@ -1,18 +1,11 @@
-// Logique des périodes et des séries pour le tracker d'habitudes.
-// Tout est calculé en date locale (le « minuit » de l'utilisateur).
-//
-// Clé de période selon le type :
-//   quotidien    → le jour           (YYYY-MM-DD)
-//   hebdomadaire → le lundi ouvrant la semaine (semaine lundi→dimanche)
-//   mensuel      → le 1er du mois     (YYYY-MM-01)
-//   unique       → le jour de validation (pas de série)
-//   null         → sans type : même chose qu'unique (voir estPonctuel)
+// Périodes et séries du tracker d'habitudes. Tout est calculé en date locale.
+// Clé de période : quotidien → le jour ; hebdomadaire → le lundi ouvrant la
+// semaine ; mensuel → le 1er du mois ; unique/null → le jour (pas de série).
 
 function versCle(d) {
-  const a = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const j = String(d.getDate()).padStart(2, "0");
-  return `${a}-${m}-${j}`;
+  return `${d.getFullYear()}-${m}-${j}`;
 }
 
 function depuisCle(cle) {
@@ -20,15 +13,14 @@ function depuisCle(cle) {
   return new Date(a, m - 1, j);
 }
 
-// Lundi de la semaine contenant `d` (getDay : 0=dim … 6=sam ; lundi=0 après décalage).
+// Lundi de la semaine contenant `d` (getDay : 0=dim … 6=sam).
 function lundiDeLaSemaine(d) {
   const decalage = (d.getDay() + 6) % 7;
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() - decalage);
 }
 
-// Un objectif « ponctuel » se coche une fois et reste coché : pas de remise à
-// zéro, pas de série. C'est le cas d'`unique` et de l'absence de type — ne pas
-// choisir d'étiquette ne doit pas transformer la tâche en habitude quotidienne.
+// Un objectif « ponctuel » se coche une fois et reste coché : pas de série.
+// C'est le cas d'`unique` et de l'absence de type.
 export function estPonctuel(type) {
   return type === "unique" || !type;
 }
@@ -62,7 +54,7 @@ export function periodePrecedente(type, cle) {
 
 // Série : nombre de périodes consécutives validées se terminant à la période
 // courante — ou à la précédente si la courante n'est pas encore faite (on ne
-// « casse » pas la série tant que la période en cours n'est pas terminée).
+// casse pas la série tant que la période en cours n'est pas terminée).
 export function calculerSerie(type, periodes, aujourdhui = new Date()) {
   if (estPonctuel(type)) return 0;
 
@@ -84,16 +76,9 @@ export function calculerSerie(type, periodes, aujourdhui = new Date()) {
 }
 
 // Série de journées complètes : combien de jours d'affilée TOUS les objectifs
-// quotidiens ont été validés. C'est la flamme de la carte « objectif
-// journalier » — à ne pas confondre avec `calculerSerie`, qui suit un objectif
-// isolé (la flamme affichée sur chaque ligne de la Life Map).
-//
-// Un objectif ne compte que pour les jours postérieurs à sa création : sans ça,
-// ajouter une habitude aujourd'hui remettrait tout l'historique à zéro, puisque
-// les jours passés ne la contiendraient jamais.
-//
-// Même tolérance que `calculerSerie` : tant que la journée en cours n'est pas
-// finie, on repart de la veille plutôt que de casser la série.
+// quotidiens ont été validés (la flamme de la carte « objectif journalier »).
+// Un objectif ne compte que pour les jours postérieurs à sa création. Même
+// tolérance que `calculerSerie` pour la journée en cours.
 export function serieJoursComplets(objectifs, completions, aujourdhui = new Date()) {
   if (objectifs.length === 0) return 0;
 
@@ -106,7 +91,6 @@ export function serieJoursComplets(objectifs, completions, aujourdhui = new Date
 
   function journeeComplete(cle) {
     const attendus = objectifs.filter((o) => !o.cree_le || versCle(new Date(o.cree_le)) <= cle);
-    // Aucun objectif n'existait encore : la série s'arrête là.
     if (attendus.length === 0) return false;
     const valides = validesPar.get(cle);
     return valides ? attendus.every((o) => valides.has(o.id)) : false;
