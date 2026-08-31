@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useLangue } from "./LangueProvider";
 import IconeDossier from "./IconeDossier";
-import { calculerSerie, estFaitMaintenant } from "../lib/periodes";
+import { estFaitMaintenant } from "../lib/periodes";
 import { basculerCompletion } from "../lib/completions";
 import { COULEUR_TYPE } from "../lib/couleurs";
 import { parPosition } from "../lib/position";
@@ -179,14 +179,13 @@ function AjoutObjectif({ t, onAjouter }) {
 }
 
 // Une ligne d'objectif : case à cocher, nom (renommable/repliable), étiquette
-// de type, série 🔥 et archivage. Composant à part car il a son propre état
+// de type et archivage. Composant à part car il a son propre état
 // (nom replié ou non), qui ne concerne que cette ligne.
 function LigneObjectif({
   objectif,
   liste,
   t,
   fait,
-  serie,
   index,
   onBasculer,
   onRenommer,
@@ -290,13 +289,6 @@ function LigneObjectif({
         </div>
       </div>
 
-      {serie >= 2 && (
-        <span className="mt-0.5 text-xs font-bold text-amber-400 shrink-0">
-          <span aria-hidden="true">🔥</span>
-          {serie}
-        </span>
-      )}
-
       {/* Objectif validé : archiver devient l'action naturelle (icône, bouton
           visible). Sinon on garde le × discret, révélé au survol. */}
       <button
@@ -305,7 +297,7 @@ function LigneObjectif({
         aria-label={t.dashboard.archiverItem}
         title={t.dashboard.archiverItem}
         className={`mt-0.5 shrink-0 rounded text-gray-400 transition hover:text-white focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
-          fait ? "opacity-90 hover:opacity-100" : "text-lg leading-none opacity-0 group-hover:opacity-100"
+          fait ? "opacity-90 hover:opacity-100" : "text-lg leading-none opacity-100 md:opacity-0 md:group-hover:opacity-100"
         }`}
       >
         {fait ? <IconeDossier /> : "×"}
@@ -554,7 +546,6 @@ export default function LifeMap({
                   t={t}
                   index={index}
                   fait={estFaitMaintenant(objectif.type, periodesDe(objectif.id))}
-                  serie={calculerSerie(objectif.type, periodesDe(objectif.id))}
                   onBasculer={() => basculer(objectif)}
                   onRenommer={(nom) => renommerObjectif(objectif.id, nom)}
                   onArchiver={() => archiverObjectif(objectif.id)}

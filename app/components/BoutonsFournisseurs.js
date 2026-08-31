@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
-import { messageErreurAuth } from "../lib/erreursAuth";
 import { useLangue } from "./LangueProvider";
 
 // Nom affiché → identifiant de provider attendu par Supabase Auth.
@@ -25,7 +24,7 @@ export default function BoutonsFournisseurs() {
 
     // Pas de redirection en cas d'erreur : on reste sur la page, on lève le chargement.
     if (error) {
-      setErreur(messageErreurAuth(error, t));
+      setErreur(error.message);
       setEnCours(null);
     }
   }

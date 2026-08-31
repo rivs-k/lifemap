@@ -23,6 +23,25 @@ export const textes = {
       titre: "Rejoignez LifeMap et commencez à atteindre vos objectifs dès aujourd’hui.",
       bouton: "Créer un compte",
     },
+    presentation: {
+      titre: "Toute votre progression, au même endroit",
+      texte:
+        "LifeMap transforme vos objectifs en un véritable parcours. Créez vos objectifs, découpez-les en tâches, suivez votre progression et planifiez votre temps — le tout dans une interface claire et motivante. Rejoignez aussi les objectifs de la communauté pour avancer ensemble.",
+      captureDashboard: "Aperçu du tableau de bord LifeMap",
+      captureAgenda: "Aperçu de l’agenda LifeMap",
+      captureExplorer: "Aperçu de l’explorateur communautaire LifeMap",
+    },
+    footer: {
+      legal: "Mentions légales",
+      confidentialite: "Politique de confidentialité",
+      rgpd: "RGPD",
+      cgu: "CGU",
+      contact: "Nous contacter",
+      email: "contact@lifemap.app",
+      droits: "Tous droits réservés.",
+      contenuAVenir: "Contenu à venir.",
+      retour: "Retour à l’accueil",
+    },
     explorer: {
       titre: "Explorer",
       recherche: "Rechercher un objectif…",
@@ -35,6 +54,8 @@ export const textes = {
       participants: "Participants",
       participer: "Participer",
       quitter: "Quitter",
+      supprimer: "Supprimer",
+      supprimerConfirme: "Supprimer cet objectif communautaire pour tout le monde ?",
       fois: "fois",
       completes: "complétés",
       aucun: "Aucun objectif communautaire pour l’instant.",
@@ -46,12 +67,6 @@ export const textes = {
       descriptionPlaceholder: "Description (optionnelle)",
       listeRejoints: "Objectifs rejoints",
       tousTermine: "Tous les participants ont terminé !",
-      uniteSerie: {
-        quotidien: "jours d’affilée",
-        hebdomadaire: "semaines d’affilée",
-        mensuel: "mois d’affilée",
-        unique: "",
-      },
     },
     agenda: {
       titre: "Agenda",
@@ -66,9 +81,7 @@ export const textes = {
       jourFin: "Dernier jour (optionnel)",
       touteLaJournee: "Toute la journée",
       supprimer: "Supprimer",
-      legendeActif: "Objectifs validés",
       evenements: { one: "événement", other: "événements" },
-      joursActifs: { one: "jour actif", other: "jours actifs" },
     },
     profil: {
       titre: "Profil",
@@ -80,15 +93,8 @@ export const textes = {
       envoiEnCours: "Envoi…",
       membreDepuis: "Membre depuis",
       validations: "Validations",
-      meilleureSerie: "Meilleure série",
       objectifsActifs: "Objectifs actifs",
       statistiques: "Statistiques",
-      activite: {
-        titre: "Activité récente",
-        vide: "Aucune activité pour l’instant.",
-        cree: "Créé",
-        valide: "Validé",
-      },
       archive: {
         titre: "Archive",
         vide: "Aucun objectif archivé.",
@@ -98,19 +104,18 @@ export const textes = {
         versListe: "Restaurer vers la liste",
         avertissement: "La suppression définitive efface aussi l’historique de validations.",
       },
-      rgpd: {
-        titre: "Mes données (RGPD)",
-        texte:
-          "LifeMap ne stocke que ce que tu crées : ton profil (pseudo, email, photo), tes objectifs, listes, validations et événements. Ces données ne sont jamais partagées avec des tiers. Tu peux les modifier ici (pseudo, photo), les exporter ci-dessous, ou tout supprimer depuis les Paramètres.",
-        exporter: "Télécharger mes données",
-      },
     },
     parametres: {
       titre: "Paramètres",
-      langue: "Langue",
       motDePasse: "Mot de passe",
       motDePasseBouton: "Mettre à jour",
       motDePasseSucces: "Mot de passe mis à jour.",
+      rgpd: {
+        titre: "Mes données (RGPD)",
+        texte:
+          "LifeMap ne stocke que ce que tu crées : ton profil (pseudo, email, photo), tes objectifs, listes, validations et événements. Ces données ne sont jamais partagées avec des tiers. Tu peux les exporter ci-dessous, modifier ton pseudo et ta photo depuis ton profil, ou tout supprimer via « Compte & confidentialité ».",
+        exporter: "Télécharger mes données",
+      },
       compte: "Compte & confidentialité",
       supprimerAvertissement:
         "La suppression du compte efface définitivement toutes tes données (objectifs, listes, historique). Cette action est irréversible.",
@@ -138,9 +143,6 @@ export const textes = {
         unique: "Unique",
         sansType: "Sans type",
       },
-      aFaire: "À faire aujourd’hui",
-      toutFait: "Tout est fait pour aujourd’hui 🎉",
-      aucunObjectif: "Aucun objectif pour l’instant.",
       lifeMap: "Votre Life Map",
       ajouterListe: "Ajouter une liste",
       ajouterItem: "Ajouter un item",
@@ -186,9 +188,6 @@ export const textes = {
       motDePasse: "Mot de passe",
       motDePassePlaceholder: "••••••••",
       chargement: "Un instant…",
-      erreurIdentifiants: "Email ou mot de passe incorrect.",
-      erreurDejaInscrit: "Un compte existe déjà avec cet email.",
-      erreurGenerique: "Une erreur est survenue. Réessaie.",
     },
     connexion: {
       titre: "Connexion",
@@ -255,6 +254,25 @@ export const textes = {
       titre: "Join LifeMap and start reaching your goals today.",
       bouton: "Create an account",
     },
+    presentation: {
+      titre: "All your progress, in one place",
+      texte:
+        "LifeMap turns your goals into a real journey. Create your goals, break them into tasks, track your progress and plan your time — all in one clear, motivating interface. Join the community's goals too, and move forward together.",
+      captureDashboard: "LifeMap dashboard preview",
+      captureAgenda: "LifeMap agenda preview",
+      captureExplorer: "LifeMap community explorer preview",
+    },
+    footer: {
+      legal: "Legal notice",
+      confidentialite: "Privacy policy",
+      rgpd: "GDPR",
+      cgu: "Terms of use",
+      contact: "Contact us",
+      email: "contact@lifemap.app",
+      droits: "All rights reserved.",
+      contenuAVenir: "Coming soon.",
+      retour: "Back to home",
+    },
     explorer: {
       titre: "Explore",
       recherche: "Search for a goal…",
@@ -267,6 +285,8 @@ export const textes = {
       participants: "Participants",
       participer: "Join",
       quitter: "Leave",
+      supprimer: "Delete",
+      supprimerConfirme: "Delete this community goal for everyone?",
       fois: "times",
       completes: "completed",
       aucun: "No community goals yet.",
@@ -278,12 +298,6 @@ export const textes = {
       descriptionPlaceholder: "Description (optional)",
       listeRejoints: "Joined goals",
       tousTermine: "All participants completed it!",
-      uniteSerie: {
-        quotidien: "days in a row",
-        hebdomadaire: "weeks in a row",
-        mensuel: "months in a row",
-        unique: "",
-      },
     },
     agenda: {
       titre: "Agenda",
@@ -298,9 +312,7 @@ export const textes = {
       jourFin: "Last day (optional)",
       touteLaJournee: "All day",
       supprimer: "Delete",
-      legendeActif: "Goals completed",
       evenements: { one: "event", other: "events" },
-      joursActifs: { one: "active day", other: "active days" },
     },
     profil: {
       titre: "Profile",
@@ -312,15 +324,8 @@ export const textes = {
       envoiEnCours: "Uploading…",
       membreDepuis: "Member since",
       validations: "Completions",
-      meilleureSerie: "Best streak",
       objectifsActifs: "Active goals",
       statistiques: "Statistics",
-      activite: {
-        titre: "Recent activity",
-        vide: "No activity yet.",
-        cree: "Created",
-        valide: "Completed",
-      },
       archive: {
         titre: "Archive",
         vide: "No archived goals.",
@@ -330,19 +335,18 @@ export const textes = {
         versListe: "Restore to list",
         avertissement: "Permanent deletion also erases the completion history.",
       },
-      rgpd: {
-        titre: "My data (GDPR)",
-        texte:
-          "LifeMap only stores what you create: your profile (username, email, photo), your goals, lists, completions and events. This data is never shared with third parties. You can edit it here (username, photo), export it below, or delete everything from Settings.",
-        exporter: "Download my data",
-      },
     },
     parametres: {
       titre: "Settings",
-      langue: "Language",
       motDePasse: "Password",
       motDePasseBouton: "Update",
       motDePasseSucces: "Password updated.",
+      rgpd: {
+        titre: "My data (GDPR)",
+        texte:
+          "LifeMap only stores what you create: your profile (username, email, photo), your goals, lists, completions and events. This data is never shared with third parties. You can export it below, edit your username and photo from your profile, or delete everything via \"Account & privacy\".",
+        exporter: "Download my data",
+      },
       compte: "Account & privacy",
       supprimerAvertissement:
         "Deleting your account permanently erases all your data (goals, lists, history). This action cannot be undone.",
@@ -370,9 +374,6 @@ export const textes = {
         unique: "One-off",
         sansType: "No type",
       },
-      aFaire: "To do today",
-      toutFait: "All done for today 🎉",
-      aucunObjectif: "No goals yet.",
       lifeMap: "Your Life Map",
       ajouterListe: "Add a list",
       ajouterItem: "Add an item",
@@ -418,9 +419,6 @@ export const textes = {
       motDePasse: "Password",
       motDePassePlaceholder: "••••••••",
       chargement: "One moment…",
-      erreurIdentifiants: "Incorrect email or password.",
-      erreurDejaInscrit: "An account already exists with this email.",
-      erreurGenerique: "Something went wrong. Please try again.",
     },
     connexion: {
       titre: "Sign in",

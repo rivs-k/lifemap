@@ -38,7 +38,7 @@ function EnteteTriable({ libelle, colonne, tri, onTrier, aligne = "left" }) {
 // données des autres (lecture publique, écriture limitée à ses propres lignes).
 // Les chiffres collectifs viennent de la fonction SQL `stats_communautaires`,
 // car la sécurité de la base masque les lignes des autres.
-export default function Explorer({ userId }) {
+export default function Explorer({ userId, estAdmin }) {
   const { t } = useLangue();
   const [objectifs, setObjectifs] = useState([]);
   const [stats, setStats] = useState({});
@@ -201,6 +201,14 @@ export default function Explorer({ userId }) {
     rafraichirStats();
   }
 
+  // Modération admin : supprime l'objectif pour tout le monde. Autorisé côté base
+  // par une politique RLS réservée à l'email admin ; le bouton n'apparaît que pour lui.
+  async function supprimer(oc) {
+    if (!window.confirm(t.explorer.supprimerConfirme)) return;
+    await supabase.from("objectifs_communautaires").delete().eq("id", oc.id);
+    setObjectifs((o) => o.filter((x) => x.id !== oc.id));
+  }
+
   // Recliquer la colonne triée inverse le sens ; sinon on change de colonne. Le
   // sens par défaut : A→Z pour un nom, décroissant pour un chiffre.
   function trierPar(colonne) {
@@ -252,7 +260,6 @@ export default function Explorer({ userId }) {
       participants,
       faits,
       total: Number(s.termine_total || 0),
-      serie: Number(s.meilleure_serie || 0),
       pourcent: participants ? Math.round((faits / participants) * 100) : 0,
       tousFaits: participants > 0 && faits === participants,
       couleur: COULEUR_TYPE[oc.type],
@@ -388,11 +395,6 @@ export default function Explorer({ userId }) {
                 )}
 
                 <div>
-                  {c.serie >= 2 && (
-                    <div className="text-xs text-amber-400 mb-1">
-                      <span aria-hidden="true">🔥</span> {c.serie} {t.explorer.uniteSerie[oc.type]}
-                    </div>
-                  )}
                   <div className="h-5 rounded-full bg-white/5 overflow-hidden">
                     <div
                       className="h-5 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
@@ -414,17 +416,28 @@ export default function Explorer({ userId }) {
                     <span aria-hidden="true">👤</span> {c.participants.toLocaleString()} ·{" "}
                     {c.total.toLocaleString()} {t.explorer.fois}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => (c.participe ? quitter(oc) : rejoindre(oc))}
-                    className={`text-sm font-bold px-4 py-2 rounded-full border transition whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
-                      c.participe
-                        ? "border-red-800 text-red-400 hover:bg-red-950"
-                        : "border-teal-600 text-teal-500 hover:bg-teal-950"
-                    }`}
-                  >
-                    {c.participe ? t.explorer.quitter : t.explorer.participer}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {estAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => supprimer(oc)}
+                        className="text-sm font-bold px-3 py-2 rounded-full border border-red-800 text-red-400 hover:bg-red-950 transition whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                      >
+                        {t.explorer.supprimer}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => (c.participe ? quitter(oc) : rejoindre(oc))}
+                      className={`text-sm font-bold px-4 py-2 rounded-full border transition whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
+                        c.participe
+                          ? "border-red-800 text-red-400 hover:bg-red-950"
+                          : "border-teal-600 text-teal-500 hover:bg-teal-950"
+                      }`}
+                    >
+                      {c.participe ? t.explorer.quitter : t.explorer.participer}
+                    </button>
+                  </div>
                 </div>
               </li>
             );
@@ -482,7 +495,7 @@ export default function Explorer({ userId }) {
             <tbody>
               {lignes.map((oc) => {
                 const {
-                  participants, faits, total, serie, pourcent,
+                  participants, faits, total, pourcent,
                   tousFaits, couleur, participe, aVote, nbVotes,
                 } = calculs(oc);
 
@@ -547,12 +560,6 @@ export default function Explorer({ userId }) {
 
                     {/* Progression */}
                     <td className="px-3 py-3 border-y border-gray-800 align-middle min-w-56">
-                      {serie >= 2 && (
-                        <div className="text-xs text-amber-400 mb-1 whitespace-nowrap">
-                          <span aria-hidden="true">🔥</span> {serie}{" "}
-                          {t.explorer.uniteSerie[oc.type]}
-                        </div>
-                      )}
                       <div className="h-5 rounded-full bg-white/5 overflow-hidden">
                         <div
                           className="h-5 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
@@ -575,17 +582,28 @@ export default function Explorer({ userId }) {
 
                     {/* Action */}
                     <td className="px-3 py-3 rounded-r-2xl border-y border-r border-gray-800 align-middle">
-                      <button
-                        type="button"
-                        onClick={() => (participe ? quitter(oc) : rejoindre(oc))}
-                        className={`text-sm font-bold px-4 py-2 rounded-full border transition whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
-                          participe
-                            ? "border-red-800 text-red-400 hover:bg-red-950"
-                            : "border-teal-600 text-teal-500 hover:bg-teal-950"
-                        }`}
-                      >
-                        {participe ? t.explorer.quitter : t.explorer.participer}
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        {estAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => supprimer(oc)}
+                            className="text-sm font-bold px-3 py-2 rounded-full border border-red-800 text-red-400 hover:bg-red-950 transition whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                          >
+                            {t.explorer.supprimer}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => (participe ? quitter(oc) : rejoindre(oc))}
+                          className={`text-sm font-bold px-4 py-2 rounded-full border transition whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
+                            participe
+                              ? "border-red-800 text-red-400 hover:bg-red-950"
+                              : "border-teal-600 text-teal-500 hover:bg-teal-950"
+                          }`}
+                        >
+                          {participe ? t.explorer.quitter : t.explorer.participer}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -598,9 +616,6 @@ export default function Explorer({ userId }) {
 
       {/* Légende */}
       <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-500">
-        <span>🔥 {t.explorer.uniteSerie.quotidien} ({t.dashboard.categories.quotidien})</span>
-        <span>🔥 {t.explorer.uniteSerie.hebdomadaire} ({t.dashboard.categories.hebdomadaire})</span>
-        <span>🔥 {t.explorer.uniteSerie.mensuel} ({t.dashboard.categories.mensuel})</span>
         <span>🏆 {t.explorer.tousTermine}</span>
       </div>
     </div>

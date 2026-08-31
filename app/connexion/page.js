@@ -7,7 +7,6 @@ import ChampTexte from "../components/ChampTexte";
 import BoutonsFournisseurs from "../components/BoutonsFournisseurs";
 import { useLangue } from "../components/LangueProvider";
 import { supabase } from "../lib/supabase";
-import { messageErreurAuth } from "../lib/erreursAuth";
 
 export default function Connexion() {
   const { t } = useLangue();
@@ -27,7 +26,7 @@ export default function Connexion() {
     });
 
     setChargement(false);
-    if (error) return setErreur(messageErreurAuth(error, t));
+    if (error) return setErreur(error.message);
     router.push("/dashboard");
   }
 

@@ -29,6 +29,7 @@ export default function PageApp({ titre, children }) {
 
       setDonnees({
         userId: user.id,
+        estAdmin: user.email === "rivsdev@outlook.fr",
         pseudo: rp.data?.pseudo || user.email,
         avatarUrl: rp.data?.avatar_url || null,
       });
@@ -56,7 +57,7 @@ export default function PageApp({ titre, children }) {
           {titre}
         </h1>
 
-        {children(donnees.userId)}
+        {children(donnees.userId, donnees.estAdmin)}
       </main>
     </>
   );

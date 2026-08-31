@@ -6,11 +6,10 @@ import { supabase } from "../lib/supabase";
 import NavbarApp from "../components/NavbarApp";
 import JaugeCirculaire from "../components/JaugeCirculaire";
 import LifeMap from "../components/LifeMap";
-import AFaire from "../components/AFaire";
 import ChampTexte from "../components/ChampTexte";
 import AssistantObjectif from "../components/AssistantObjectif";
 import { useLangue } from "../components/LangueProvider";
-import { periodeCourante, serieJoursComplets, estFaitMaintenant } from "../lib/periodes";
+import { periodeCourante, estFaitMaintenant } from "../lib/periodes";
 import { PALETTE } from "../lib/couleurs";
 import { parPosition } from "../lib/position";
 
@@ -35,7 +34,7 @@ const TYPES_STATS = [
 ];
 
 // Ordre des cartes résumé à la première visite.
-const CARTES_DEFAUT = ["journalier", "termines", "evenement", "aFaire"];
+const CARTES_DEFAUT = ["journalier", "termines", "evenement"];
 
 // Type transporté quand on glisse une carte, distinct de ceux de la Life Map :
 // une carte lâchée sur une colonne ne doit rien déclencher.
@@ -235,9 +234,6 @@ export default function Dashboard() {
   const pourcentageJour = quotidiens.length
     ? Math.round((100 * faitsAujourdhui.length) / quotidiens.length)
     : 0;
-  // La flamme compte les journées PLEINES (tous les quotidiens validés), pas la
-  // meilleure série d'un objectif isolé.
-  const serieComplete = serieJoursComplets(quotidiens, completions);
 
   // ── Carte 2 : objectifs terminés depuis le début, par type ──
   // `typesObjectifs` (figé, couvre les archivés) fusionné avec `objectifs`
@@ -279,12 +275,6 @@ export default function Dashboard() {
             <h2 className="font-bold text-[11px] md:text-sm leading-tight">
               {t.dashboard.objectifJournalier}
             </h2>
-            {serieComplete >= 2 && (
-              <span className="flex items-center gap-0.5 text-[11px] md:text-sm font-bold text-amber-400 shrink-0">
-                <span aria-hidden="true">🔥</span>
-                {serieComplete}
-              </span>
-            )}
           </div>
 
           <div className="flex-1 flex items-center justify-center py-1">
@@ -462,61 +452,27 @@ export default function Dashboard() {
           />
         )}
 
-        {/* Bandeau du haut : cartes résumé et panneau « à faire ». L'ordre des
-            quatre est porté par la propriété CSS `order` ; le HTML ne bouge pas. */}
-        <div className="mt-6 flex flex-col md:flex-row gap-4 md:items-stretch">
-          {/* Mobile : rangée des trois cartes qui défile, « à faire » en dessous
-              (-order-1). À partir de md : `contents` efface cette boîte, les cartes
-              rejoignent la rangée du dessus — « à faire » peut se glisser entre elles.
-              Les trois cartes font un cinquième de la rangée, sans s'étirer. */}
-          <div className="flex md:contents -order-1 gap-4 overflow-x-auto md:overflow-visible pb-2 md:pb-0 defilement-listes">
-            {/* Chaque carte est glissable et sert de cible : on la lâche sur une autre. */}
-            {ordreCartes.map((cle, index) =>
-              cle === "aFaire" ? null : (
-                <section
-                  key={cle}
-                  draggable
-                  style={{ order: index }}
-                  onDragStart={(e) => e.dataTransfer.setData(TYPE_CARTE, cle)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const glissee = e.dataTransfer.getData(TYPE_CARTE);
-                    if (glissee) deplacerCarte(glissee, index);
-                  }}
-                  title={t.dashboard.deplacerCarte}
-                  className={`w-[40vw] shrink-0 md:w-auto md:basis-[20%] md:grow-0 md:shrink-0 md:min-w-0 bg-gray-900/60 border border-gray-800 rounded-2xl p-2 md:p-3 cursor-grab active:cursor-grabbing ${contenuCartes[cle].classe}`}
-                >
-                  {contenuCartes[cle].contenu}
-                </section>
-              ),
-            )}
-          </div>
-
-          {/* Panneau « à faire » (20 % de la rangée). On n'installe ici que la
-              cible du dépôt : l'en-tête, à l'intérieur, sert de poignée. */}
-          <div
-            style={{ order: ordreCartes.indexOf("aFaire") }}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              const glissee = e.dataTransfer.getData(TYPE_CARTE);
-              if (glissee) deplacerCarte(glissee, ordreCartes.indexOf("aFaire"));
-            }}
-            className="md:basis-[20%] md:grow-0 md:shrink-0 md:min-w-0"
-          >
-            <AFaire
-              userId={userId}
-              objectifs={objectifs}
-              completions={completions}
-              setCompletions={setCompletions}
-              poignee={{
-                draggable: true,
-                title: t.dashboard.deplacerCarte,
-                onDragStart: (e) => e.dataTransfer.setData(TYPE_CARTE, "aFaire"),
+        {/* Bandeau du haut : trois cartes résumé, réordonnables par glisser-déposer.
+            L'ordre est porté par la propriété CSS `order` ; le HTML ne bouge pas. */}
+        <div className="mt-6 flex gap-4 overflow-x-auto md:overflow-visible pb-2 md:pb-0 md:items-stretch defilement-listes">
+          {ordreCartes.map((cle, index) => (
+            <section
+              key={cle}
+              draggable
+              style={{ order: index }}
+              onDragStart={(e) => e.dataTransfer.setData(TYPE_CARTE, cle)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const glissee = e.dataTransfer.getData(TYPE_CARTE);
+                if (glissee) deplacerCarte(glissee, index);
               }}
-            />
-          </div>
+              title={t.dashboard.deplacerCarte}
+              className={`w-[40vw] shrink-0 md:w-auto md:flex-1 md:min-w-0 bg-gray-900/60 border border-gray-800 rounded-2xl p-2 md:p-3 cursor-grab active:cursor-grabbing ${contenuCartes[cle].classe}`}
+            >
+              {contenuCartes[cle].contenu}
+            </section>
+          ))}
         </div>
 
         <LifeMap

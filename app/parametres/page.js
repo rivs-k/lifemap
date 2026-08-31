@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import PageApp from "../components/PageApp";
 import ChampTexte from "../components/ChampTexte";
-import SelecteurLangue from "../components/SelecteurLangue";
 import { useLangue } from "../components/LangueProvider";
 import { supabase } from "../lib/supabase";
 import { TESTS_CRITERES, motDePasseValide } from "../lib/motDePasse";
@@ -45,13 +44,37 @@ function Contenu() {
     router.push("/");
   }
 
+  // Export RGPD : télécharge toutes ses données en JSON. La RLS garantit qu'on
+  // ne récupère que ses propres lignes.
+  async function exporterDonnees() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const [rp, rl, ro, rc, rev] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+      supabase.from("listes").select("*"),
+      supabase.from("objectifs").select("*"),
+      supabase.from("completions").select("*"),
+      supabase.from("evenements").select("*"),
+    ]);
+    const donnees = {
+      exporte_le: new Date().toISOString(),
+      profil: rp.data,
+      listes: rl.data,
+      objectifs: ro.data,
+      completions: rc.data,
+      evenements: rev.data,
+    };
+    const blob = new Blob([JSON.stringify(donnees, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const lien = document.createElement("a");
+    lien.href = url;
+    lien.download = "lifemap-donnees.json";
+    lien.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="max-w-lg flex flex-col gap-12">
-      <section>
-        <h2 className="font-bold text-lg mb-3">{t.parametres.langue}</h2>
-        <SelecteurLangue />
-      </section>
-
       <section>
         <h2 className="font-bold text-lg mb-3">{t.parametres.motDePasse}</h2>
         <form onSubmit={changerMotDePasse} className="flex flex-col gap-4">
@@ -87,6 +110,18 @@ function Contenu() {
             {enCours ? t.auth.chargement : t.parametres.motDePasseBouton}
           </button>
         </form>
+      </section>
+
+      <section>
+        <h2 className="font-bold text-lg mb-3">{t.parametres.rgpd.titre}</h2>
+        <p className="text-sm text-gray-400 mb-4">{t.parametres.rgpd.texte}</p>
+        <button
+          type="button"
+          onClick={exporterDonnees}
+          className="border border-gray-600 hover:border-teal-500 transition text-sm font-bold px-6 py-3 rounded-full focus:outline-none focus-visible:border-teal-500"
+        >
+          {t.parametres.rgpd.exporter}
+        </button>
       </section>
 
       <section>

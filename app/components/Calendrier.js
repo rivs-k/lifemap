@@ -83,7 +83,6 @@ export default function Calendrier({ userId }) {
   const [mois, setMois] = useState(null);
   const [selection, setSelection] = useState(null);
   const [evenements, setEvenements] = useState([]);
-  const [joursActifs, setJoursActifs] = useState(new Set());
   const [chargement, setChargement] = useState(true);
 
   useEffect(() => {
@@ -103,29 +102,20 @@ export default function Calendrier({ userId }) {
     async function charger() {
       setChargement(true);
       const debut = new Date(mois.getFullYear(), mois.getMonth(), 1);
-      const finExclue = new Date(mois.getFullYear(), mois.getMonth() + 1, 1);
       const dernier = new Date(mois.getFullYear(), mois.getMonth() + 1, 0);
 
-      const [re, rc] = await Promise.all([
-        // Tout événement qui CHEVAUCHE le mois : il peut avoir commencé avant et
-        // se poursuivre dedans. Un simple intervalle sur `jour` les raterait.
-        supabase
-          .from("evenements")
-          .select("*")
-          .lte("jour", cle(dernier))
-          .or(`jour_fin.gte.${cle(debut)},jour.gte.${cle(debut)}`)
-          .order("jour", { ascending: true })
-          .order("heure_debut", { ascending: true, nullsFirst: true }),
-        supabase
-          .from("completions")
-          .select("cree_le")
-          .gte("cree_le", debut.toISOString())
-          .lt("cree_le", finExclue.toISOString()),
-      ]);
+      // Tout événement qui CHEVAUCHE le mois : il peut avoir commencé avant et
+      // se poursuivre dedans. Un simple intervalle sur `jour` les raterait.
+      const re = await supabase
+        .from("evenements")
+        .select("*")
+        .lte("jour", cle(dernier))
+        .or(`jour_fin.gte.${cle(debut)},jour.gte.${cle(debut)}`)
+        .order("jour", { ascending: true })
+        .order("heure_debut", { ascending: true, nullsFirst: true });
 
       if (annule) return;
       setEvenements(re.data || []);
-      setJoursActifs(new Set((rc.data || []).map((c) => cle(new Date(c.cree_le)))));
       setChargement(false);
     }
 
@@ -190,9 +180,6 @@ export default function Calendrier({ userId }) {
   const pluriel = new Intl.PluralRules(langue);
   const cleAujourdhui = cle(new Date());
   const evenementsDuJour = evenements.filter((e) => couvre(e, selection));
-  const nbJoursActifsDuMois = jours.filter(
-    (j) => j.getMonth() === mois.getMonth() && joursActifs.has(cle(j)),
-  ).length;
 
   const HAUTEUR_BANDEAU = 20; // px, hauteur d'une ligne de bandeau
   const HAUTEUR_DATE = 26; // px réservés au numéro du jour
@@ -238,8 +225,7 @@ export default function Calendrier({ userId }) {
         </div>
 
         <p className="text-sm text-gray-400">
-          {evenements.length} {t.agenda.evenements[pluriel.select(evenements.length)]} ·{" "}
-          {nbJoursActifsDuMois} {t.agenda.joursActifs[pluriel.select(nbJoursActifsDuMois)]}
+          {evenements.length} {t.agenda.evenements[pluriel.select(evenements.length)]}
         </p>
       </div>
 
@@ -284,25 +270,17 @@ export default function Calendrier({ userId }) {
                                 : "border-gray-900 bg-gray-950"
                           }`}
                         >
-                          <div className="flex items-center justify-between">
-                            <span
-                              className={`text-xs font-bold ${
-                                k === cleAujourdhui
-                                  ? "text-teal-500"
-                                  : dansLeMois
-                                    ? "text-gray-300"
-                                    : "text-gray-600"
-                              }`}
-                            >
-                              {jour.getDate()}
-                            </span>
-                            {joursActifs.has(k) && (
-                              <span
-                                aria-label={t.agenda.legendeActif}
-                                className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0"
-                              />
-                            )}
-                          </div>
+                          <span
+                            className={`text-xs font-bold ${
+                              k === cleAujourdhui
+                                ? "text-teal-500"
+                                : dansLeMois
+                                  ? "text-gray-300"
+                                  : "text-gray-600"
+                            }`}
+                          >
+                            {jour.getDate()}
+                          </span>
                         </button>
                       );
                     })}
@@ -334,11 +312,6 @@ export default function Calendrier({ userId }) {
               );
             })}
           </div>
-
-          <p className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-            <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-teal-500" />
-            {t.agenda.legendeActif}
-          </p>
         </div>
 
         {/* Panneau du jour sélectionné */}

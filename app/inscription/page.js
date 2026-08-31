@@ -7,7 +7,6 @@ import ChampTexte from "../components/ChampTexte";
 import BoutonsFournisseurs from "../components/BoutonsFournisseurs";
 import { useLangue } from "../components/LangueProvider";
 import { supabase } from "../lib/supabase";
-import { messageErreurAuth } from "../lib/erreursAuth";
 import { TESTS_CRITERES } from "../lib/motDePasse";
 
 
@@ -32,7 +31,7 @@ export default function Inscription() {
     });
 
     setChargement(false);
-    if (error) return setErreur(messageErreurAuth(error, t));
+    if (error) return setErreur(error.message);
     // Session présente = confirmation email désactivée, sinon email envoyé.
     if (data.session) router.push("/dashboard");
     else setSucces(true);
