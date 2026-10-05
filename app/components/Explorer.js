@@ -21,7 +21,7 @@ function EnteteTriable({ libelle, colonne, tri, onTrier, aligne = "left" }) {
       <button
         type="button"
         onClick={() => onTrier(colonne)}
-        className={`inline-flex items-center gap-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 rounded ${
+        className={`inline-flex items-center gap-1 uppercase transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 rounded ${
           actif ? "text-teal-500" : "text-gray-400 hover:text-white"
         }`}
       >
@@ -42,7 +42,6 @@ export default function Explorer({ userId, estAdmin }) {
   const { t } = useLangue();
   const [objectifs, setObjectifs] = useState([]);
   const [stats, setStats] = useState({});
-  const [votes, setVotes] = useState([]);
   const [mesParticipations, setMesParticipations] = useState(new Set());
   const [listes, setListes] = useState([]);
   const [recherche, setRecherche] = useState("");
@@ -55,12 +54,11 @@ export default function Explorer({ userId, estAdmin }) {
 
   useEffect(() => {
     async function charger() {
-      const [ro, rv, rp, rl, rs] = await Promise.all([
+      const [ro, rp, rl, rs] = await Promise.all([
         supabase
           .from("objectifs_communautaires")
           .select("*")
           .order("cree_le", { ascending: false }),
-        supabase.from("votes_communautaires").select("objectif_communautaire_id, user_id"),
         supabase
           .from("participations")
           .select("objectif_communautaire_id")
@@ -70,7 +68,6 @@ export default function Explorer({ userId, estAdmin }) {
       ]);
 
       setObjectifs(ro.data || []);
-      setVotes(rv.data || []);
       setMesParticipations(new Set((rp.data || []).map((p) => p.objectif_communautaire_id)));
       setListes(rl.data || []);
       indexerStats(rs.data);
@@ -86,32 +83,22 @@ export default function Explorer({ userId, estAdmin }) {
     indexerStats(data);
   }
 
-  // Total de votes par objectif, et ceux que j'ai votés (pour colorer la flèche).
-  const votesParObjectif = votes.reduce((acc, v) => {
-    acc[v.objectif_communautaire_id] = (acc[v.objectif_communautaire_id] || 0) + 1;
-    return acc;
-  }, {});
-  const mesVotes = new Set(
-    votes.filter((v) => v.user_id === userId).map((v) => v.objectif_communautaire_id),
-  );
-
-  // Le vote est une bascule : revoter retire son vote.
+  // Le vote est une bascule : revoter retire son vote. Le nombre de votes et
+  // « ai-je voté ? » viennent maintenant des stats (fonction SQL), donc après
+  // écriture on redemande simplement les agrégats à la base.
   async function basculerVote(oc) {
-    if (mesVotes.has(oc.id)) {
+    if (stats[oc.id]?.a_vote) {
       await supabase
         .from("votes_communautaires")
         .delete()
         .eq("objectif_communautaire_id", oc.id)
         .eq("user_id", userId);
-      setVotes((v) =>
-        v.filter((x) => !(x.objectif_communautaire_id === oc.id && x.user_id === userId)),
-      );
     } else {
       await supabase
         .from("votes_communautaires")
         .insert({ objectif_communautaire_id: oc.id, user_id: userId });
-      setVotes((v) => [...v, { objectif_communautaire_id: oc.id, user_id: userId }]);
     }
+    rafraichirStats();
   }
 
   // Rejoindre = copier l'objectif dans SA Life Map, relié au communautaire. Ce
@@ -140,7 +127,6 @@ export default function Explorer({ userId, estAdmin }) {
       user_id: userId,
       liste_id: liste.id,
       nom: oc.titre,
-      emoji: oc.emoji,
       type: oc.type,
       objectif_communautaire_id: oc.id,
       position: 0,
@@ -189,7 +175,6 @@ export default function Explorer({ userId, estAdmin }) {
         cree_par: userId,
         titre,
         description: (d.get("description") || "").trim() || null,
-        emoji: (d.get("emoji") || "").trim() || null,
         type: d.get("type"),
       })
       .select()
@@ -210,12 +195,12 @@ export default function Explorer({ userId, estAdmin }) {
   }
 
   // Recliquer la colonne triée inverse le sens ; sinon on change de colonne. Le
-  // sens par défaut : A→Z pour un nom, décroissant pour un chiffre.
+  // sens par défaut : A→Z pour le type (texte), décroissant pour un chiffre.
   function trierPar(colonne) {
     setTri((t0) =>
       t0.colonne === colonne
         ? { colonne, sens: t0.sens === "asc" ? "desc" : "asc" }
-        : { colonne, sens: colonne === "nom" ? "asc" : "desc" },
+        : { colonne, sens: colonne === "type" ? "asc" : "desc" },
     );
   }
 
@@ -223,18 +208,12 @@ export default function Explorer({ userId, estAdmin }) {
   function valeurTri(o) {
     const s = stats[o.id] || {};
     switch (tri.colonne) {
-      case "nom":
-        return o.titre.toLowerCase();
-      case "termine":
-        return Number(s.termine_total || 0);
       case "type":
         return o.type;
-      case "progression":
-        return s.participants ? Number(s.termine_periode) / Number(s.participants) : 0;
       case "participants":
         return Number(s.participants || 0);
       default:
-        return votesParObjectif[o.id] || 0;
+        return Number(s.nb_votes || 0);
     }
   }
 
@@ -261,11 +240,10 @@ export default function Explorer({ userId, estAdmin }) {
       faits,
       total: Number(s.termine_total || 0),
       pourcent: participants ? Math.round((faits / participants) * 100) : 0,
-      tousFaits: participants > 0 && faits === participants,
       couleur: COULEUR_TYPE[oc.type],
       participe: mesParticipations.has(oc.id),
-      aVote: mesVotes.has(oc.id),
-      nbVotes: votesParObjectif[oc.id] || 0,
+      aVote: s.a_vote,
+      nbVotes: Number(s.nb_votes || 0),
     };
   }
 
@@ -298,13 +276,6 @@ export default function Explorer({ userId, estAdmin }) {
           onSubmit={proposer}
           className="mt-4 bg-gray-900/60 border border-gray-800 rounded-2xl p-4 flex flex-wrap gap-3"
         >
-          <input
-            name="emoji"
-            maxLength={2}
-            placeholder="🎯"
-            aria-label="Emoji"
-            className="w-16 text-center bg-black/40 border border-gray-700 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:border-teal-500"
-          />
           <input
             name="titre"
             required
@@ -369,17 +340,7 @@ export default function Explorer({ userId, estAdmin }) {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-2">
-                      {oc.emoji && (
-                        <span aria-hidden="true" className="text-xl shrink-0">
-                          {oc.emoji}
-                        </span>
-                      )}
                       <span className="font-bold break-words">{oc.titre}</span>
-                      {c.tousFaits && (
-                        <span title={t.explorer.tousTermine} aria-label={t.explorer.tousTermine}>
-                          🏆
-                        </span>
-                      )}
                     </div>
                     <span
                       className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded"
@@ -455,33 +416,24 @@ export default function Explorer({ userId, estAdmin }) {
                   tri={tri}
                   onTrier={trierPar}
                 />
-                <EnteteTriable
-                  libelle={t.explorer.nom}
-                  colonne="nom"
-                  tri={tri}
-                  onTrier={trierPar}
-                />
+                <th className="px-3 py-2 font-bold text-xs uppercase tracking-wide text-gray-400 text-left">
+                  {t.explorer.nom}
+                </th>
                 <th className="px-3 py-2 font-bold text-xs uppercase tracking-wide text-gray-400 text-left">
                   {t.explorer.description}
                 </th>
-                <EnteteTriable
-                  libelle={t.explorer.termine}
-                  colonne="termine"
-                  tri={tri}
-                  onTrier={trierPar}
-                />
+                <th className="px-3 py-2 font-bold text-xs uppercase tracking-wide text-gray-400 text-left">
+                  {t.explorer.termine}
+                </th>
                 <EnteteTriable
                   libelle={t.explorer.type}
                   colonne="type"
                   tri={tri}
                   onTrier={trierPar}
                 />
-                <EnteteTriable
-                  libelle={t.explorer.progression}
-                  colonne="progression"
-                  tri={tri}
-                  onTrier={trierPar}
-                />
+                <th className="px-3 py-2 font-bold text-xs uppercase tracking-wide text-gray-400 text-left">
+                  {t.explorer.progression}
+                </th>
                 <EnteteTriable
                   libelle={t.explorer.participants}
                   colonne="participants"
@@ -496,7 +448,7 @@ export default function Explorer({ userId, estAdmin }) {
               {lignes.map((oc) => {
                 const {
                   participants, faits, total, pourcent,
-                  tousFaits, couleur, participe, aVote, nbVotes,
+                  couleur, participe, aVote, nbVotes,
                 } = calculs(oc);
 
                 return (
@@ -522,17 +474,7 @@ export default function Explorer({ userId, estAdmin }) {
                     {/* Nom */}
                     <td className="px-3 py-3 border-y border-gray-800 align-middle">
                       <div className="flex items-center gap-2">
-                        {oc.emoji && (
-                          <span aria-hidden="true" className="text-xl">
-                            {oc.emoji}
-                          </span>
-                        )}
                         <span className="font-bold">{oc.titre}</span>
-                        {tousFaits && (
-                          <span title={t.explorer.tousTermine} aria-label={t.explorer.tousTermine}>
-                            🏆
-                          </span>
-                        )}
                       </div>
                     </td>
 
@@ -613,11 +555,6 @@ export default function Explorer({ userId, estAdmin }) {
         </div>
         </>
       )}
-
-      {/* Légende */}
-      <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-500">
-        <span>🏆 {t.explorer.tousTermine}</span>
-      </div>
     </div>
   );
 }

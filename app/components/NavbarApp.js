@@ -78,9 +78,6 @@ export default function NavbarApp({ pseudo, avatarUrl }) {
               )}
             </span>
             <span className="text-sm font-bold hidden sm:inline">{pseudo}</span>
-            <span aria-hidden="true" className="hidden sm:inline text-gray-400 text-xs">
-              ▾
-            </span>
           </Link>
         </div>
       </div>

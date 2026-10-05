@@ -4,29 +4,21 @@ import { useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useLangue } from "./LangueProvider";
 
-// Nom affiché → identifiant de provider attendu par Supabase Auth.
-const fournisseurs = [{ nom: "Google", provider: "google" }];
-
 export default function BoutonsFournisseurs() {
   const { t } = useLangue();
-  const [enCours, setEnCours] = useState(null);
   const [erreur, setErreur] = useState(null);
 
-  async function connecter(provider) {
+  async function connecterGoogle() {
     setErreur(null);
-    setEnCours(provider);
 
-    // Redirige vers le fournisseur puis revient sur /dashboard, session en URL.
+    // Redirige vers Google puis revient sur /dashboard, session en URL.
     const { error } = await supabase.auth.signInWithOAuth({
-      provider,
+      provider: "google",
       options: { redirectTo: `${window.location.origin}/dashboard` },
     });
 
-    // Pas de redirection en cas d'erreur : on reste sur la page, on lève le chargement.
-    if (error) {
-      setErreur(error.message);
-      setEnCours(null);
-    }
+    // Pas de redirection en cas d'erreur : on reste sur la page et on l'affiche.
+    if (error) setErreur(error.message);
   }
 
   return (
@@ -43,19 +35,13 @@ export default function BoutonsFournisseurs() {
         </p>
       )}
 
-      <div className="mt-8 flex flex-col gap-3">
-        {fournisseurs.map(({ nom, provider }) => (
-          <button
-            key={nom}
-            type="button"
-            onClick={() => connecter(provider)}
-            disabled={enCours !== null}
-            className="bg-black/60 backdrop-blur-sm border border-gray-600 hover:border-teal-500 transition font-bold px-5 py-4 rounded-full focus:outline-none focus-visible:border-teal-500 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {enCours === provider ? t.auth.chargement : `${t.auth.continuerAvec} ${nom}`}
-          </button>
-        ))}
-      </div>
+      <button
+        type="button"
+        onClick={connecterGoogle}
+        className="mt-8 w-full bg-black/60 backdrop-blur-sm border border-gray-600 hover:border-teal-500 transition font-bold px-5 py-4 rounded-full focus:outline-none focus-visible:border-teal-500"
+      >
+        {t.auth.continuerAvec} Google
+      </button>
     </>
   );
 }

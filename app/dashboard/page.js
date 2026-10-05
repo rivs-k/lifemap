@@ -468,8 +468,22 @@ export default function Dashboard() {
                 if (glissee) deplacerCarte(glissee, index);
               }}
               title={t.dashboard.deplacerCarte}
-              className={`w-[40vw] shrink-0 md:w-auto md:flex-1 md:min-w-0 bg-gray-900/60 border border-gray-800 rounded-2xl p-2 md:p-3 cursor-grab active:cursor-grabbing ${contenuCartes[cle].classe}`}
+              className={`group relative w-[40vw] shrink-0 md:w-auto md:flex-1 md:min-w-0 bg-gray-900/60 border border-gray-800 rounded-2xl p-2 md:p-3 pl-5 md:pl-6 cursor-grab active:cursor-grabbing ${contenuCartes[cle].classe}`}
             >
+              {/* Poignée de déplacement, révélée au survol (comme les colonnes). */}
+              <span
+                aria-hidden="true"
+                className="absolute top-2 left-1.5 text-gray-600 group-hover:text-gray-400 transition"
+              >
+                <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                  <circle cx="2.5" cy="3" r="1.2" />
+                  <circle cx="7.5" cy="3" r="1.2" />
+                  <circle cx="2.5" cy="8" r="1.2" />
+                  <circle cx="7.5" cy="8" r="1.2" />
+                  <circle cx="2.5" cy="13" r="1.2" />
+                  <circle cx="7.5" cy="13" r="1.2" />
+                </svg>
+              </span>
               {contenuCartes[cle].contenu}
             </section>
           ))}

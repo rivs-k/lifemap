@@ -18,8 +18,6 @@ export default function Profil() {
   const [userId, setUserId] = useState(null);
   const [profil, setProfil] = useState(null);
   const [stats, setStats] = useState({ validations: 0, objectifs: 0 });
-  const [editionPseudo, setEditionPseudo] = useState(false);
-  const [pseudoSaisi, setPseudoSaisi] = useState("");
   const [envoiPhoto, setEnvoiPhoto] = useState(false);
   const [erreur, setErreur] = useState(null);
   const [chargement, setChargement] = useState(true);
@@ -51,14 +49,6 @@ export default function Profil() {
     }
     charger();
   }, [router]);
-
-  async function enregistrerPseudo() {
-    const v = pseudoSaisi.trim();
-    setEditionPseudo(false);
-    if (!v || v === profil.pseudo) return;
-    setProfil((p) => ({ ...p, pseudo: v }));
-    await supabase.from("profiles").update({ pseudo: v }).eq("id", userId);
-  }
 
   async function changerPhoto(e) {
     const fichier = e.target.files?.[0];
@@ -164,32 +154,12 @@ export default function Profil() {
           </div>
 
           <div className="min-w-0">
-            {editionPseudo ? (
-              <input
-                autoFocus
-                value={pseudoSaisi}
-                onChange={(e) => setPseudoSaisi(e.target.value)}
-                onBlur={enregistrerPseudo}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") enregistrerPseudo();
-                  if (e.key === "Escape") setEditionPseudo(false);
-                }}
-                className="bg-black/40 border border-gray-700 rounded-lg px-3 py-1 text-2xl font-bold text-white focus:outline-none focus:border-teal-500"
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setPseudoSaisi(profil.pseudo || "");
-                  setEditionPseudo(true);
-                }}
-                title={t.dashboard.renommer}
-                style={{ fontFamily: "var(--font-oswald)" }}
-                className="text-3xl md:text-4xl font-bold text-teal-500 uppercase tracking-wide text-left rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
-              >
-                {profil.pseudo || t.profil.titre}
-              </button>
-            )}
+            <h1
+              style={{ fontFamily: "var(--font-oswald)" }}
+              className="text-3xl md:text-4xl font-bold text-teal-500 uppercase tracking-wide"
+            >
+              {profil.pseudo || t.profil.titre}
+            </h1>
 
             <p className="mt-1 text-sm text-gray-300">{profil.email}</p>
             {membreDepuis && (

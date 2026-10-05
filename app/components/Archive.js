@@ -4,11 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useLangue } from "./LangueProvider";
 
-function LigneArchive({ objectif, listes, t, onRestaurer, onSupprimer }) {
-  // Liste d'origine si elle existe encore, sinon la première disponible.
-  const [listeCible, setListeCible] = useState(
-    listes.some((l) => l.id === objectif.liste_id) ? objectif.liste_id : listes[0]?.id || "",
-  );
+function LigneArchive({ objectif, t, onRestaurer, onSupprimer }) {
   const [confirme, setConfirme] = useState(false);
 
   return (
@@ -21,26 +17,10 @@ function LigneArchive({ objectif, listes, t, onRestaurer, onSupprimer }) {
         </span>
       )}
 
-      {listes.length > 0 && (
-        <select
-          value={listeCible}
-          onChange={(e) => setListeCible(e.target.value)}
-          aria-label={t.profil.archive.versListe}
-          className="bg-black/40 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-teal-500"
-        >
-          {listes.map((l) => (
-            <option key={l.id} value={l.id} className="bg-gray-900">
-              {l.titre}
-            </option>
-          ))}
-        </select>
-      )}
-
       <button
         type="button"
-        disabled={!listeCible}
-        onClick={() => onRestaurer(objectif, listeCible)}
-        className="border border-gray-600 hover:border-teal-500 transition text-sm font-bold px-3 py-1.5 rounded-full disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:border-teal-500"
+        onClick={() => onRestaurer(objectif)}
+        className="border border-gray-600 hover:border-teal-500 transition text-sm font-bold px-3 py-1.5 rounded-full focus:outline-none focus-visible:border-teal-500"
       >
         {t.profil.archive.restaurer}
       </button>
@@ -75,7 +55,7 @@ export default function Archive() {
           .select("*")
           .eq("archive", true)
           .order("cree_le", { ascending: false }),
-        supabase.from("listes").select("id, titre").order("position"),
+        supabase.from("listes").select("id").order("position"),
       ]);
       setObjectifs(ro.data || []);
       setListes(rl.data || []);
@@ -84,17 +64,15 @@ export default function Archive() {
     charger();
   }, []);
 
-  async function restaurer(objectif, listeId) {
-    // On place l'objectif restauré à la fin de la liste cible.
-    const { count } = await supabase
-      .from("objectifs")
-      .select("id", { count: "exact", head: true })
-      .eq("liste_id", listeId)
-      .eq("archive", false);
+  async function restaurer(objectif) {
+    // Liste d'origine si existe encore, sinon première dispo
+    const listeId = listes.some((l) => l.id === objectif.liste_id)
+      ? objectif.liste_id
+      : listes[0]?.id ?? null;
 
     await supabase
       .from("objectifs")
-      .update({ archive: false, liste_id: listeId, position: count ?? 0 })
+      .update({ archive: false, liste_id: listeId, position: 0 })
       .eq("id", objectif.id);
 
     setObjectifs((o) => o.filter((x) => x.id !== objectif.id));
@@ -115,21 +93,17 @@ export default function Archive() {
       ) : objectifs.length === 0 ? (
         <p className="mt-4 text-sm text-gray-400">{t.profil.archive.vide}</p>
       ) : (
-        <>
-          <p className="mt-2 text-xs text-gray-500">{t.profil.archive.avertissement}</p>
-          <ul className="mt-4 flex flex-col gap-2">
-            {objectifs.map((o) => (
-              <LigneArchive
-                key={o.id}
-                objectif={o}
-                listes={listes}
-                t={t}
-                onRestaurer={restaurer}
-                onSupprimer={supprimer}
-              />
-            ))}
-          </ul>
-        </>
+        <ul className="mt-4 flex flex-col gap-2">
+          {objectifs.map((o) => (
+            <LigneArchive
+              key={o.id}
+              objectif={o}
+              t={t}
+              onRestaurer={restaurer}
+              onSupprimer={supprimer}
+            />
+          ))}
+        </ul>
       )}
     </section>
   );

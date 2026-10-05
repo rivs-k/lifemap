@@ -41,39 +41,12 @@ function formatHoraire(ev, t) {
   return fin ? `${debut} - ${fin}` : debut;
 }
 
-// Découpe les événements d'une semaine en bandeaux : un élément étendu sur
-// plusieurs colonnes plutôt qu'une pastille par jour. Un événement à cheval sur
-// deux semaines produit un bandeau par semaine.
-function bandeauxDeLaSemaine(semaine, evenements) {
-  const debutSemaine = cle(semaine[0]);
-  const finSemaine = cle(semaine[6]);
-
-  const concernes = evenements
-    .filter((e) => e.jour <= finSemaine && dernierJour(e) >= debutSemaine)
-    .sort((a, b) => (a.jour < b.jour ? -1 : a.jour > b.jour ? 1 : 0));
-
-  // Empilement : un bandeau se place sur la première ligne libre.
-  const finParLigne = [];
-
-  return concernes.map((e) => {
-    const debutIdx = e.jour <= debutSemaine ? 0 : semaine.findIndex((j) => cle(j) === e.jour);
-    const finIdx =
-      dernierJour(e) >= finSemaine ? 6 : semaine.findIndex((j) => cle(j) === dernierJour(e));
-
-    let ligne = 0;
-    while (finParLigne[ligne] !== undefined && finParLigne[ligne] >= debutIdx) ligne += 1;
-    finParLigne[ligne] = finIdx;
-
-    return {
-      id: e.id,
-      titre: e.titre,
-      colonne: debutIdx + 1,
-      etendue: finIdx - debutIdx + 1,
-      ligne: ligne + 1,
-      commenceIci: e.jour >= debutSemaine,
-      termineIci: dernierJour(e) <= finSemaine,
-    };
-  });
+// Couleur de pastille dérivée de l'id : stable et distincte d'un événement à
+// l'autre (elle ne porte pas de sens, elle sert juste à les différencier).
+const PALETTE_EV = ["#0d9488", "#9085e9", "#d55181", "#c98500", "#3b82f6"];
+function couleurEvenement(ev) {
+  const somme = [...ev.id].reduce((s, c) => s + c.charCodeAt(0), 0);
+  return PALETTE_EV[somme % PALETTE_EV.length];
 }
 
 export default function Calendrier({ userId }) {
@@ -171,22 +144,15 @@ export default function Calendrier({ userId }) {
     month: "long",
     year: "numeric",
   }).format(premier);
-  const formatJourCourt = new Intl.DateTimeFormat(langue, { weekday: "short" });
-  // 1er janvier 2024 était un lundi : base des en-têtes de colonnes.
-  const entetes = Array.from({ length: 7 }, (_, i) =>
-    formatJourCourt.format(new Date(2024, 0, 1 + i)),
-  );
+  // En-têtes des colonnes (Lun, Mar…), traduits dans le dictionnaire.
+  const entetes = t.agenda.joursSemaine;
 
-  const pluriel = new Intl.PluralRules(langue);
   const cleAujourdhui = cle(new Date());
   const evenementsDuJour = evenements.filter((e) => couvre(e, selection));
 
-  const HAUTEUR_BANDEAU = 20; // px, hauteur d'une ligne de bandeau
-  const HAUTEUR_DATE = 26; // px réservés au numéro du jour
-
   return (
     <div>
-      {/* En-tête : navigation + résumé du mois */}
+      {/* En-tête : navigation entre les mois */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <button
@@ -211,22 +177,7 @@ export default function Calendrier({ userId }) {
           >
             ›
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              const n = new Date();
-              setMois(new Date(n.getFullYear(), n.getMonth(), 1));
-              setSelection(cle(n));
-            }}
-            className="ml-2 text-sm text-gray-400 hover:text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 rounded px-2 py-1"
-          >
-            {t.agenda.aujourdhui}
-          </button>
         </div>
-
-        <p className="text-sm text-gray-400">
-          {evenements.length} {t.agenda.evenements[pluriel.select(evenements.length)]}
-        </p>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_20rem]">
@@ -241,76 +192,57 @@ export default function Calendrier({ userId }) {
           </div>
 
           <div className="flex flex-col gap-1">
-            {semaines.map((semaine) => {
-              const bandeaux = bandeauxDeLaSemaine(semaine, evenements);
-              const nbLignes = bandeaux.reduce((max, b) => Math.max(max, b.ligne), 0);
-              // La hauteur des cases s'ajuste au nombre de bandeaux empilés.
-              const hauteur = HAUTEUR_DATE + nbLignes * (HAUTEUR_BANDEAU + 2) + 10;
+            {semaines.map((semaine) => (
+              <div key={cle(semaine[0])} className="grid grid-cols-7 gap-1">
+                {semaine.map((jour) => {
+                  const k = cle(jour);
+                  const dansLeMois = jour.getMonth() === mois.getMonth();
+                  const estSelection = k === selection;
+                  // Une pastille par événement couvrant ce jour, chacune colorée.
+                  const evsDuJour = evenements.filter((e) => couvre(e, k));
 
-              return (
-                <div key={cle(semaine[0])} className="relative">
-                  {/* Couche 1 : les cases */}
-                  <div className="grid grid-cols-7 gap-1">
-                    {semaine.map((jour) => {
-                      const k = cle(jour);
-                      const dansLeMois = jour.getMonth() === mois.getMonth();
-                      const estSelection = k === selection;
-
-                      return (
-                        <button
-                          key={k}
-                          type="button"
-                          onClick={() => setSelection(k)}
-                          style={{ minHeight: Math.max(hauteur, 76) }}
-                          className={`flex flex-col justify-start rounded-lg border p-1.5 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
-                            estSelection
-                              ? "border-teal-500 bg-teal-950"
-                              : dansLeMois
-                                ? "border-gray-800 bg-gray-900 hover:border-gray-600"
-                                : "border-gray-900 bg-gray-950"
-                          }`}
-                        >
-                          <span
-                            className={`text-xs font-bold ${
-                              k === cleAujourdhui
-                                ? "text-teal-500"
-                                : dansLeMois
-                                  ? "text-gray-300"
-                                  : "text-gray-600"
-                            }`}
-                          >
-                            {jour.getDate()}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Couche 2 : les bandeaux, superposés et étendus sur plusieurs
-                      colonnes. pointer-events-none pour ne pas gêner la sélection. */}
-                  <div
-                    className="pointer-events-none absolute inset-x-0 grid grid-cols-7 gap-x-1 gap-y-0.5 px-0"
-                    style={{ top: HAUTEUR_DATE, gridAutoRows: `${HAUTEUR_BANDEAU}px` }}
-                  >
-                    {bandeaux.map((b) => (
-                      <div
-                        key={b.id}
-                        title={b.titre}
-                        style={{
-                          gridColumn: `${b.colonne} / span ${b.etendue}`,
-                          gridRow: b.ligne,
-                        }}
-                        className={`mx-1 truncate bg-teal-700/70 text-white text-[11px] leading-5 px-1.5 ${
-                          b.commenceIci ? "rounded-l-md" : ""
-                        } ${b.termineIci ? "rounded-r-md" : ""}`}
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setSelection(k)}
+                      className={`min-h-[76px] flex flex-col justify-start gap-1 rounded-lg border p-1.5 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
+                        estSelection
+                          ? "border-teal-500 bg-teal-950"
+                          : dansLeMois
+                            ? "border-gray-800 bg-gray-900 hover:border-gray-600"
+                            : "border-gray-900 bg-gray-950"
+                      }`}
+                    >
+                      <span
+                        className={`text-xs font-bold ${
+                          k === cleAujourdhui
+                            ? "text-teal-500"
+                            : dansLeMois
+                              ? "text-gray-300"
+                              : "text-gray-600"
+                        }`}
                       >
-                        {b.titre}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+                        {jour.getDate()}
+                      </span>
+                      {evsDuJour.length > 0 && (
+                        <div className="flex flex-wrap gap-0.5">
+                          {evsDuJour.map((e) => (
+                            <span
+                              key={e.id}
+                              aria-hidden="true"
+                              title={e.titre}
+                              className="w-1.5 h-1.5 rounded-full shrink-0"
+                              style={{ backgroundColor: couleurEvenement(e) }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
 

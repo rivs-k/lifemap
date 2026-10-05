@@ -74,7 +74,7 @@ function Contenu() {
   }
 
   return (
-    <div className="max-w-lg flex flex-col gap-12">
+    <div className="max-w-lg mx-auto flex flex-col gap-12 text-center">
       <section>
         <h2 className="font-bold text-lg mb-3">{t.parametres.motDePasse}</h2>
         <form onSubmit={changerMotDePasse} className="flex flex-col gap-4">
@@ -90,7 +90,7 @@ function Contenu() {
               {t.inscription.criteres.map((label, i) => {
                 const ok = TESTS_CRITERES[i](mdp);
                 return (
-                  <li key={label} className={`flex items-center gap-2 text-sm ${ok ? "text-teal-500" : "text-gray-400"}`}>
+                  <li key={label} className={`flex items-center justify-center gap-2 text-sm ${ok ? "text-teal-500" : "text-gray-400"}`}>
                     <span aria-hidden="true">{ok ? "✓" : "○"}</span>
                     {label}
                   </li>
@@ -105,7 +105,7 @@ function Contenu() {
           <button
             type="submit"
             disabled={enCours || !motDePasseValide(mdp)}
-            className="self-start bg-teal-700 hover:bg-teal-600 transition text-white font-bold px-6 py-3 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="self-center bg-teal-700 hover:bg-teal-600 transition text-white font-bold px-6 py-3 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {enCours ? t.auth.chargement : t.parametres.motDePasseBouton}
           </button>

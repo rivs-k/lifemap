@@ -4,7 +4,6 @@ import { useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useLangue } from "./LangueProvider";
 
-const TYPES = ["quotidien", "hebdomadaire", "mensuel", "unique"];
 const NOUVELLE_LISTE = "__nouvelle__";
 
 export default function AssistantObjectif({ listes, onAjouterListe, onAjouterObjectifs, onFermer }) {
@@ -54,10 +53,6 @@ export default function AssistantObjectif({ listes, onAjouterListe, onAjouterObj
 
   function basculerInclus(index) {
     setSuggestions((s) => s.map((o, i) => (i === index ? { ...o, inclus: !o.inclus } : o)));
-  }
-
-  function modifierChamp(index, champ, valeur) {
-    setSuggestions((s) => s.map((o, i) => (i === index ? { ...o, [champ]: valeur } : o)));
   }
 
   async function ajouterALaLifeMap() {
@@ -173,22 +168,7 @@ export default function AssistantObjectif({ listes, onAjouterListe, onAjouterObj
                     className="shrink-0 accent-teal-600"
                   />
                   <span aria-hidden="true">{o.emoji}</span>
-                  <input
-                    value={o.nom}
-                    onChange={(e) => modifierChamp(i, "nom", e.target.value)}
-                    className="flex-1 min-w-0 bg-transparent text-sm text-white focus:outline-none"
-                  />
-                  <select
-                    value={o.type}
-                    onChange={(e) => modifierChamp(i, "type", e.target.value)}
-                    className="bg-black/40 border border-gray-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-teal-500"
-                  >
-                    {TYPES.map((ty) => (
-                      <option key={ty} value={ty} className="bg-gray-900">
-                        {t.dashboard.categories[ty]}
-                      </option>
-                    ))}
-                  </select>
+                  <span className="flex-1 min-w-0 text-sm text-white truncate">{o.nom}</span>
                 </li>
               ))}
             </ul>
