@@ -8,20 +8,24 @@ import { useLangue } from "../components/LangueProvider";
 import { supabase } from "../lib/supabase";
 import { TESTS_CRITERES, motDePasseValide } from "../lib/motDePasse";
 
+// Page paramètres
 export default function Parametres() {
   const { t } = useLangue();
   return <PageApp titre={t.parametres.titre}>{() => <Contenu />}</PageApp>;
 }
 
+// Composant Contenu
 function Contenu() {
   const { t } = useLangue();
   const router = useRouter();
+  // États
   const [mdp, setMdp] = useState("");
   const [succes, setSucces] = useState(false);
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState(null);
   const [confirmeSuppr, setConfirmeSuppr] = useState(false);
 
+  // Changer mot de passe
   async function changerMotDePasse(e) {
     e.preventDefault();
     setErreur(null);
@@ -37,15 +41,14 @@ function Contenu() {
     setSucces(true);
   }
 
-  // La fonction SQL supprime le compte auth ; les cascades effacent le reste.
+  // Supprimer compte
   async function supprimerCompte() {
-    await supabase.rpc("supprimer_mon_compte");
+    await supabase.rpc("supprimer_mon_compte"); // Appel fonction SQL
     await supabase.auth.signOut();
     router.push("/");
   }
 
-  // Export RGPD : télécharge toutes ses données en JSON. La RLS garantit qu'on
-  // ne récupère que ses propres lignes.
+  // Exporter données
   async function exporterDonnees() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -73,6 +76,7 @@ function Contenu() {
     URL.revokeObjectURL(url);
   }
 
+  // Affichage
   return (
     <div className="max-w-lg mx-auto flex flex-col gap-12 text-center">
       <section>

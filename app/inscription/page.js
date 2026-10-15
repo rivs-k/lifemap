@@ -9,15 +9,17 @@ import { useLangue } from "../components/LangueProvider";
 import { supabase } from "../lib/supabase";
 import { TESTS_CRITERES } from "../lib/motDePasse";
 
-
+// Page inscription
 export default function Inscription() {
   const { t } = useLangue();
   const router = useRouter();
+  // États
   const [motdepasse, setMotdepasse] = useState("");
   const [erreur, setErreur] = useState(null);
   const [chargement, setChargement] = useState(false);
   const [succes, setSucces] = useState(false);
 
+  // Envoi formulaire
   async function handleSubmit(e) {
     e.preventDefault();
     setErreur(null);
@@ -32,11 +34,11 @@ export default function Inscription() {
 
     setChargement(false);
     if (error) return setErreur(error.message);
-    // Session présente = confirmation email désactivée, sinon email envoyé.
     if (data.session) router.push("/dashboard");
     else setSucces(true);
   }
 
+  // Affichage
   return (
     <main className="min-h-screen flex flex-col items-center justify-center text-center px-6 py-24">
       <div className="w-full max-w-lg">
@@ -91,6 +93,20 @@ export default function Inscription() {
                   })}
                 </ul>
               </ChampTexte>
+
+              <label className="flex items-start gap-3 text-sm text-gray-200">
+                <input type="checkbox" name="cgu" required className="mt-1 accent-teal-600" />
+                <span>
+                  {t.inscription.cgu.debut}{" "}
+                  <Link href="/cgu" target="_blank" className="text-teal-500 hover:text-teal-400 underline">
+                    {t.inscription.cgu.lienCgu}
+                  </Link>{" "}
+                  {t.inscription.cgu.et}{" "}
+                  <Link href="/confidentialite" target="_blank" className="text-teal-500 hover:text-teal-400 underline">
+                    {t.inscription.cgu.lienConfidentialite}
+                  </Link>
+                </span>
+              </label>
 
               {erreur && (
                 <p role="alert" className="text-sm text-red-400">

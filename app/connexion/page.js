@@ -8,12 +8,15 @@ import BoutonsFournisseurs from "../components/BoutonsFournisseurs";
 import { useLangue } from "../components/LangueProvider";
 import { supabase } from "../lib/supabase";
 
+// Page connexion
 export default function Connexion() {
   const { t } = useLangue();
   const router = useRouter();
+  // États
   const [erreur, setErreur] = useState(null);
   const [chargement, setChargement] = useState(false);
 
+  // Envoi formulaire
   async function handleSubmit(e) {
     e.preventDefault();
     setErreur(null);
@@ -30,6 +33,7 @@ export default function Connexion() {
     router.push("/dashboard");
   }
 
+  // Affichage
   return (
     <main className="min-h-screen flex flex-col items-center justify-center text-center px-6">
       <div className="w-full max-w-lg">

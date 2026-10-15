@@ -8,13 +8,16 @@ import NavbarApp from "../components/NavbarApp";
 import Archive from "../components/Archive";
 import { useLangue } from "../components/LangueProvider";
 
-const TAILLE_MAX = 2 * 1024 * 1024; // 2 Mo
+const TAILLE_MAX = 2 * 1024 * 1024;
 
+// Page profil
 export default function Profil() {
   const { t, langue } = useLangue();
   const router = useRouter();
+  // Références
   const refFichier = useRef(null);
 
+  // États
   const [userId, setUserId] = useState(null);
   const [profil, setProfil] = useState(null);
   const [stats, setStats] = useState({ validations: 0, objectifs: 0 });
@@ -22,14 +25,13 @@ export default function Profil() {
   const [erreur, setErreur] = useState(null);
   const [chargement, setChargement] = useState(true);
 
+  // Chargement
   useEffect(() => {
     async function charger() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return router.replace("/connexion");
       setUserId(user.id);
 
-      // select("*") : la page reste fonctionnelle même si la colonne
-      // avatar_url n'a pas encore été ajoutée par la migration.
       const [rp, ro, rc] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
         supabase.from("objectifs").select("archive"),
@@ -50,9 +52,10 @@ export default function Profil() {
     charger();
   }, [router]);
 
+  // Changer photo
   async function changerPhoto(e) {
     const fichier = e.target.files?.[0];
-    e.target.value = ""; // permet de re-choisir le même fichier ensuite
+    e.target.value = "";
     if (!fichier) return;
 
     setErreur(null);
@@ -61,8 +64,6 @@ export default function Profil() {
 
     setEnvoiPhoto(true);
     const extension = (fichier.name.split(".").pop() || "png").toLowerCase();
-    // Le premier segment du chemin doit être l'id : c'est ce que vérifie la
-    // règle de sécurité du bucket.
     const chemin = `${userId}/avatar.${extension}`;
 
     const { error } = await supabase.storage
@@ -76,8 +77,6 @@ export default function Profil() {
     }
 
     const { data } = supabase.storage.from("avatars").getPublicUrl(chemin);
-    // Le chemin ne change pas d'un envoi à l'autre : sans ce paramètre, le
-    // navigateur continuerait d'afficher l'ancienne image en cache.
     const url = `${data.publicUrl}?v=${Date.now()}`;
 
     await supabase.from("profiles").update({ avatar_url: url }).eq("id", userId);
@@ -85,6 +84,7 @@ export default function Profil() {
     setEnvoiPhoto(false);
   }
 
+  // Déconnexion
   async function deconnexion() {
     await supabase.auth.signOut();
     router.push("/connexion");
@@ -110,6 +110,7 @@ export default function Profil() {
     { libelle: t.profil.objectifsActifs, valeur: stats.objectifs },
   ];
 
+  // Affichage
   return (
     <>
       <NavbarApp pseudo={profil.pseudo} avatarUrl={profil.avatar_url} />
@@ -118,7 +119,7 @@ export default function Profil() {
         <div className="flex flex-wrap items-center gap-6">
           <div className="relative">
             {profil.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element -- image distante (Supabase Storage) : next/image imposerait de déclarer le domaine
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={profil.avatar_url}
                 alt=""

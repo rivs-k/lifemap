@@ -7,11 +7,11 @@ import SelecteurLangue from "./SelecteurLangue";
 import { useLangue } from "./LangueProvider";
 import { estRouteApp } from "../lib/routesApp";
 
+// Composant Navbar
 export default function Navbar() {
   const { t } = useLangue();
   const pathname = usePathname();
 
-  // Les pages de l'app connectée ont leur propre barre de nav (NavbarApp).
   if (estRouteApp(pathname)) return null;
 
   return (

@@ -1,4 +1,4 @@
-// Couleur associée à chaque type d'objectif — un seul endroit à modifier.
+// Couleur type
 export const COULEUR_TYPE = {
   quotidien: "#0d9488",
   hebdomadaire: "#9085e9",

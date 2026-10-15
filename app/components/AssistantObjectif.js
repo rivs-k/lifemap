@@ -6,17 +6,19 @@ import { useLangue } from "./LangueProvider";
 
 const NOUVELLE_LISTE = "__nouvelle__";
 
+// Composant AssistantObjectif
 export default function AssistantObjectif({ listes, onAjouterListe, onAjouterObjectifs, onFermer }) {
   const { t } = useLangue();
+  // États
   const [texte, setTexte] = useState("");
   const [listeCibleId, setListeCibleId] = useState(listes[0]?.id || NOUVELLE_LISTE);
   const [nomNouvelleListe, setNomNouvelleListe] = useState("");
   const [chargement, setChargement] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState(null);
-  // null tant que rien n'a été généré : distingue « saisie » de « résultats ».
   const [suggestions, setSuggestions] = useState(null);
 
+  // Générer
   async function generer(e) {
     e.preventDefault();
     const v = texte.trim();
@@ -44,17 +46,26 @@ export default function AssistantObjectif({ listes, onAjouterListe, onAjouterObj
 
     setChargement(false);
     if (!reponse.ok) {
-      setErreur(t.assistantIa.erreur);
+      console.error(`[Assistant IA] ${reponse.status} ${JSON.stringify(await reponse.json().catch(() => null))}`);
+      setErreur(
+        reponse.status === 429
+          ? t.assistantIa.erreurQuota
+          : reponse.status === 503
+            ? t.assistantIa.erreurSurcharge
+            : t.assistantIa.erreur,
+      );
       return;
     }
     const donnees = await reponse.json();
     setSuggestions((donnees.objectifs || []).map((o) => ({ ...o, inclus: true })));
   }
 
+  // Basculer inclus
   function basculerInclus(index) {
     setSuggestions((s) => s.map((o, i) => (i === index ? { ...o, inclus: !o.inclus } : o)));
   }
 
+  // Ajouter ala life map
   async function ajouterALaLifeMap() {
     const retenus = suggestions
       .filter((o) => o.inclus && o.nom.trim())
@@ -72,6 +83,7 @@ export default function AssistantObjectif({ listes, onAjouterListe, onAjouterObj
     onFermer();
   }
 
+  // Affichage
   return (
     <div
       className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-4"
@@ -167,7 +179,6 @@ export default function AssistantObjectif({ listes, onAjouterListe, onAjouterObj
                     onChange={() => basculerInclus(i)}
                     className="shrink-0 accent-teal-600"
                   />
-                  <span aria-hidden="true">{o.emoji}</span>
                   <span className="flex-1 min-w-0 text-sm text-white truncate">{o.nom}</span>
                 </li>
               ))}

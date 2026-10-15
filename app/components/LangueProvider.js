@@ -5,10 +5,11 @@ import { textes } from "../dictionnaires";
 
 const ContexteLangue = createContext(null);
 
+// Composant LangueProvider
 export function LangueProvider({ children }) {
   const [langue, setLangue] = useState("fr");
 
-  // Garde <html lang> synchronisé pour les lecteurs d'écran.
+  // Langue page
   useEffect(() => {
     document.documentElement.lang = langue;
   }, [langue]);
@@ -22,10 +23,5 @@ export function LangueProvider({ children }) {
   );
 }
 
-export function useLangue() {
-  const contexte = useContext(ContexteLangue);
-  if (!contexte) {
-    throw new Error("useLangue doit être appelé à l’intérieur de <LangueProvider>");
-  }
-  return contexte;
-}
+// Hook langue
+export const useLangue = () => useContext(ContexteLangue);

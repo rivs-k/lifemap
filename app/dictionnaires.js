@@ -5,7 +5,7 @@ export const textes = {
       seConnecter: "Se connecter",
       sEnregistrer: "S’enregistrer",
     },
-    slogan: "Every goal start with plan.",
+    slogan: "Every goal starts with a plan.",
     objectifs: [
       "Définissez vos objectifs",
       "Organisez vos tâches",
@@ -41,6 +41,57 @@ export const textes = {
       droits: "Tous droits réservés.",
       contenuAVenir: "Contenu à venir.",
       retour: "Retour à l’accueil",
+    },
+    pagesLegales: {
+      cgu: [
+        {
+          titre: "Conditions générales d’utilisation",
+          texte:
+            "En créant un compte sur LifeMap, vous acceptez les présentes conditions. LifeMap est un service gratuit, réalisé dans le cadre d’un projet de formation, qui permet d’organiser et de suivre ses objectifs personnels. Vous êtes responsable de votre compte et des contenus que vous publiez : les objectifs partagés dans l’espace Explorer doivent rester respectueux et ne contenir aucun propos offensant, illégal ou publicitaire. Tout contenu ne respectant pas ces règles peut être supprimé par la modération. Les suggestions de l’assistant IA sont données à titre indicatif. LifeMap est fourni sans garantie de disponibilité permanente, et ces conditions peuvent évoluer. Vous pouvez supprimer votre compte à tout moment depuis la page Paramètres.",
+        },
+      ],
+      rgpd: [
+        {
+          titre: "Responsable du traitement",
+          texte:
+            "Les données personnelles collectées sur LifeMap sont traitées par l’éditeur de l’application, dans le cadre d’un projet de formation. Pour toute question relative à vos données, vous pouvez écrire à contact@lifemap.app.",
+        },
+        {
+          titre: "Données collectées",
+          texte:
+            "LifeMap collecte uniquement les données nécessaires à son fonctionnement : votre adresse email, votre pseudo et votre photo de profil, ainsi que le contenu que vous créez (listes, objectifs, validations, événements de l’agenda, votes et participations aux objectifs communautaires). Si vous vous connectez avec Google, seules votre adresse email et les informations de base de votre profil sont récupérées.",
+        },
+        {
+          titre: "Finalités et base légale",
+          texte:
+            "Ces données servent uniquement à faire fonctionner le service : création et sécurisation de votre compte, organisation et suivi de vos objectifs, affichage de l’agenda et de l’espace communautaire. Leur traitement repose sur l’exécution du service auquel vous vous inscrivez en acceptant les conditions générales d’utilisation.",
+        },
+        {
+          titre: "Hébergement et destinataires",
+          texte:
+            "Les données sont hébergées par Supabase (base de données, authentification et stockage des photos). Lorsque vous utilisez l’assistant IA, le texte de l’objectif que vous saisissez est transmis à l’API Gemini de Google afin de générer des suggestions ; aucune autre donnée n’y est envoyée. Vos données ne sont jamais vendues ni utilisées à des fins publicitaires.",
+        },
+        {
+          titre: "Données publiques",
+          texte:
+            "Les objectifs que vous publiez dans l’espace Explorer sont visibles par tous les utilisateurs connectés, ainsi que le nombre de votes et de participants. Vos objectifs personnels, vos validations et votre agenda restent privés : chaque utilisateur ne peut accéder qu’à ses propres données.",
+        },
+        {
+          titre: "Durée de conservation",
+          texte:
+            "Vos données sont conservées tant que votre compte existe. Lorsque vous supprimez votre compte, l’ensemble de vos données (profil, listes, objectifs, validations, événements, votes et participations) est effacé définitivement.",
+        },
+        {
+          titre: "Stockage local",
+          texte:
+            "LifeMap n’utilise aucun cookie publicitaire ni outil de mesure d’audience. Le navigateur conserve uniquement votre session de connexion et l’ordre de vos cartes sur le tableau de bord.",
+        },
+        {
+          titre: "Vos droits",
+          texte:
+            "Conformément au RGPD, vous disposez d’un droit d’accès, de rectification, d’effacement, de portabilité et d’opposition sur vos données. Vous pouvez modifier votre pseudo et votre photo depuis votre profil, exporter toutes vos données ou supprimer votre compte depuis la page Paramètres. Pour toute autre demande, écrivez à contact@lifemap.app. Vous pouvez également adresser une réclamation à la CNIL (cnil.fr).",
+        },
+      ],
     },
     explorer: {
       titre: "Explorer",
@@ -153,6 +204,8 @@ export const textes = {
     },
     assistantIa: {
       bouton: "Définir mes objectifs avec l’IA",
+      erreurQuota: "Limite quotidienne de l’IA atteinte. Réessaie demain.",
+      erreurSurcharge: "L’IA est très sollicitée en ce moment. Réessaie dans quelques instants.",
       titre: "Décomposer un objectif",
       intro:
         "Décris un objectif large : l’IA propose des sous-objectifs concrets à ajouter à ta Life Map.",
@@ -218,6 +271,13 @@ export const textes = {
         "Un chiffre",
         "Un caractère spécial",
       ],
+      cgu: {
+        debut: "J’accepte les",
+        google: "En continuant avec Google, vous acceptez les",
+        lienCgu: "conditions générales d’utilisation",
+        et: "et la",
+        lienConfidentialite: "politique de confidentialité",
+      },
     },
   },
 
@@ -227,7 +287,7 @@ export const textes = {
       seConnecter: "Sign in",
       sEnregistrer: "Sign up",
     },
-    slogan: "Every goal start with plan.",
+    slogan: "Every goal starts with a plan.",
     objectifs: [
       "Set your goals",
       "Organize your tasks",
@@ -263,6 +323,57 @@ export const textes = {
       droits: "All rights reserved.",
       contenuAVenir: "Coming soon.",
       retour: "Back to home",
+    },
+    pagesLegales: {
+      cgu: [
+        {
+          titre: "Terms of use",
+          texte:
+            "By creating a LifeMap account, you accept these terms. LifeMap is a free service, built as part of a training project, that lets you organise and track your personal goals. You are responsible for your account and for the content you publish: goals shared in the Explore space must remain respectful and must not contain offensive, illegal or promotional content. Any content that breaks these rules may be removed by moderation. Suggestions from the AI assistant are for guidance only. LifeMap is provided without any guarantee of permanent availability, and these terms may change. You can delete your account at any time from the Settings page.",
+        },
+      ],
+      rgpd: [
+        {
+          titre: "Data controller",
+          texte:
+            "Personal data collected on LifeMap is processed by the publisher of the application, as part of a training project. For any question about your data, you can write to contact@lifemap.app.",
+        },
+        {
+          titre: "Data collected",
+          texte:
+            "LifeMap only collects the data it needs to work: your email address, username and profile picture, and the content you create (lists, goals, completions, calendar events, votes and participation in community goals). If you sign in with Google, only your email address and basic profile information are retrieved.",
+        },
+        {
+          titre: "Purposes and legal basis",
+          texte:
+            "This data is only used to run the service: creating and securing your account, organising and tracking your goals, and displaying the calendar and the community space. It is processed to provide the service you sign up for when you accept the terms of use.",
+        },
+        {
+          titre: "Hosting and recipients",
+          texte:
+            "Data is hosted by Supabase (database, authentication and photo storage). When you use the AI assistant, the text of the goal you enter is sent to Google’s Gemini API to generate suggestions; no other data is sent. Your data is never sold or used for advertising.",
+        },
+        {
+          titre: "Public data",
+          texte:
+            "Goals you publish in the Explore space are visible to all signed-in users, along with their number of votes and participants. Your personal goals, completions and calendar remain private: each user can only access their own data.",
+        },
+        {
+          titre: "Retention period",
+          texte:
+            "Your data is kept for as long as your account exists. When you delete your account, all your data (profile, lists, goals, completions, events, votes and participation) is permanently erased.",
+        },
+        {
+          titre: "Local storage",
+          texte:
+            "LifeMap uses no advertising cookies or analytics tools. Your browser only keeps your sign-in session and the order of your cards on the dashboard.",
+        },
+        {
+          titre: "Your rights",
+          texte:
+            "Under the GDPR, you have the right to access, rectify, erase and port your data, and to object to its processing. You can edit your username and photo from your profile, and export all your data or delete your account from the Settings page. For any other request, write to contact@lifemap.app. You can also lodge a complaint with the CNIL (cnil.fr).",
+        },
+      ],
     },
     explorer: {
       titre: "Explore",
@@ -375,6 +486,8 @@ export const textes = {
     },
     assistantIa: {
       bouton: "Define my goals with AI",
+      erreurQuota: "Daily AI limit reached. Please try again tomorrow.",
+      erreurSurcharge: "The AI is under heavy load right now. Please try again in a moment.",
       titre: "Break down a goal",
       intro:
         "Describe a broad goal: the AI suggests concrete sub-goals to add to your Life Map.",
@@ -440,6 +553,13 @@ export const textes = {
         "One digit",
         "One special character",
       ],
+      cgu: {
+        debut: "I accept the",
+        google: "By continuing with Google, you accept the",
+        lienCgu: "terms of use",
+        et: "and the",
+        lienConfidentialite: "privacy policy",
+      },
     },
   },
 };

@@ -1,10 +1,9 @@
-// Jauge circulaire (donut) pour une valeur en pourcentage. La taille vient du
-// CSS (className) ; le dessin utilise un repère fixe de 100×100 que le viewBox étire.
 const REPERE = 100;
 
+// Composant JaugeCirculaire
 export default function JaugeCirculaire({
   valeur,
-  epaisseur = 10, // en % du diamètre
+  epaisseur = 10,
   couleur = "#14b8a6",
   className = "",
   children,

@@ -1,23 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { supabase } from "../lib/supabase";
 import { useLangue } from "./LangueProvider";
 
+// Composant BoutonsFournisseurs
 export default function BoutonsFournisseurs() {
   const { t } = useLangue();
+  // États
   const [erreur, setErreur] = useState(null);
 
+  // Connecter google
   async function connecterGoogle() {
     setErreur(null);
 
-    // Redirige vers Google puis revient sur /dashboard, session en URL.
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/dashboard` },
     });
 
-    // Pas de redirection en cas d'erreur : on reste sur la page et on l'affiche.
     if (error) setErreur(error.message);
   }
 
@@ -42,6 +44,18 @@ export default function BoutonsFournisseurs() {
       >
         {t.auth.continuerAvec} Google
       </button>
+
+      <p className="mt-3 text-xs text-gray-400 text-center">
+        {t.inscription.cgu.google}{" "}
+        <Link href="/cgu" target="_blank" className="text-teal-500 hover:text-teal-400 underline">
+          {t.inscription.cgu.lienCgu}
+        </Link>{" "}
+        {t.inscription.cgu.et}{" "}
+        <Link href="/confidentialite" target="_blank" className="text-teal-500 hover:text-teal-400 underline">
+          {t.inscription.cgu.lienConfidentialite}
+        </Link>
+        .
+      </p>
     </>
   );
 }

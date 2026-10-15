@@ -6,11 +6,14 @@ import ChampTexte from "../components/ChampTexte";
 import { useLangue } from "../components/LangueProvider";
 import { supabase } from "../lib/supabase";
 
+// Page mot-de-passe-oublie
 export default function MotDePasseOublie() {
   const { t } = useLangue();
+  // États
   const [envoye, setEnvoye] = useState(false);
   const [chargement, setChargement] = useState(false);
 
+  // Envoi formulaire
   async function handleSubmit(e) {
     e.preventDefault();
     setChargement(true);
@@ -20,11 +23,11 @@ export default function MotDePasseOublie() {
       redirectTo: `${window.location.origin}/nouveau-mot-de-passe`,
     });
 
-    // Même message en cas d'erreur : ne pas révéler qui a un compte.
     setChargement(false);
     setEnvoye(true);
   }
 
+  // Affichage
   return (
     <main className="min-h-screen flex flex-col items-center justify-center text-center px-6">
       <div className="w-full max-w-lg">

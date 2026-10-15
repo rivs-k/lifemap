@@ -1,7 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Le préfixe NEXT_PUBLIC_ les rend accessibles au navigateur — nécessaire ici
-// puisque l'auth se fait depuis des composants client.
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const cleAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -12,5 +10,4 @@ if (!url || !cleAnon) {
   );
 }
 
-// Client unique et partagé pour toute l'application.
 export const supabase = createClient(url, cleAnon);

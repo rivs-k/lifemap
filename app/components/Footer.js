@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLangue } from "./LangueProvider";
 
+// Liens
 const LIENS = [
   { cle: "legal", href: "/mentions-legales" },
   { cle: "confidentialite", href: "/confidentialite" },
@@ -10,6 +11,7 @@ const LIENS = [
   { cle: "cgu", href: "/cgu" },
 ];
 
+// Composant Footer
 export default function Footer() {
   const { t } = useLangue();
 

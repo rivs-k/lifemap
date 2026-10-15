@@ -1,4 +1,4 @@
-// Comparateur pour trier listes/objectifs selon la position (glisser-déposer).
+// Par position
 export function parPosition(a, b) {
   return a.position - b.position;
 }

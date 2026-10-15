@@ -8,18 +8,19 @@ import { useLangue } from "../components/LangueProvider";
 import { supabase } from "../lib/supabase";
 import { TESTS_CRITERES, motDePasseValide } from "../lib/motDePasse";
 
+// Page nouveau-mot-de-passe
 export default function NouveauMotDePasse() {
   const { t } = useLangue();
   const router = useRouter();
+  // États
   const [pret, setPret] = useState(false);
   const [verification, setVerification] = useState(true);
   const [motdepasse, setMotdepasse] = useState("");
   const [erreur, setErreur] = useState(null);
   const [chargement, setChargement] = useState(false);
 
+  // Session
   useEffect(() => {
-    // Jeton de récupération dans l'URL : supabase-js ouvre une session
-    // temporaire, seule autorisée à changer le mot de passe sans l'ancien.
     const { data } = supabase.auth.onAuthStateChange((evenement, session) => {
       if (evenement === "PASSWORD_RECOVERY" || session) setPret(true);
     });
@@ -32,6 +33,7 @@ export default function NouveauMotDePasse() {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  // Envoi formulaire
   async function handleSubmit(e) {
     e.preventDefault();
     setErreur(null);
@@ -42,10 +44,10 @@ export default function NouveauMotDePasse() {
     const { error } = await supabase.auth.updateUser({ password: motdepasse });
     setChargement(false);
     if (error) return setErreur(error.message);
-    // La session de récupération est devenue normale : direction l'app.
     router.push("/dashboard");
   }
 
+  // Affichage
   return (
     <main className="min-h-screen flex flex-col items-center justify-center text-center px-6">
       <div className="w-full max-w-lg">

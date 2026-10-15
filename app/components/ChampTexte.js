@@ -1,3 +1,4 @@
+// Composant ChampTexte
 export default function ChampTexte({ id, label, children, ...props }) {
   return (
     <div>

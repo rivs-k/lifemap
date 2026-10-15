@@ -2,20 +2,20 @@
 
 import { useEffect, useRef } from "react";
 
-// L'image défile à 15 % de la vitesse du contenu : plus bas = plus lointain.
 const FACTEUR = 0.15;
-// Plus haute que l'écran pour ne pas découvrir de vide en montant (page la plus longue : l'accueil).
 const HAUTEUR = "130vh";
 
+// Composant FondDunes
 export default function FondDunes() {
+  // Références
   const ref = useRef(null);
 
+  // Défilement
   useEffect(() => {
     const element = ref.current;
     let enAttente = false;
 
     function auScroll() {
-      // Un seul calcul par frame (scroll se déclenche bien plus souvent).
       if (enAttente) return;
       enAttente = true;
       requestAnimationFrame(() => {

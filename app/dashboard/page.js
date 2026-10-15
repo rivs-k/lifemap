@@ -13,18 +13,19 @@ import { periodeCourante, estFaitMaintenant } from "../lib/periodes";
 import { PALETTE } from "../lib/couleurs";
 import { parPosition } from "../lib/position";
 
+// Depuis clé
 function depuisCle(k) {
   const [a, m, j] = k.split("-").map(Number);
   return new Date(a, m - 1, j);
 }
 
+// Format court
 const formatCourt = (k, langue, option) =>
   new Intl.DateTimeFormat(langue, option).format(depuisCle(k));
 const formatJourCourt = (k, langue) => formatCourt(k, langue, { weekday: "short" });
 const formatMoisCourt = (k, langue) => formatCourt(k, langue, { month: "short" });
 
-// Types affichés dans la carte « objectifs terminés » + couleurs. « Sans type »
-// ferme la liste, en gris neutre : absence d'étiquette, pas une catégorie.
+// Types stats
 const TYPES_STATS = [
   { cle: "quotidien", couleur: "#0d9488" },
   { cle: "hebdomadaire", couleur: "#9085e9" },
@@ -33,18 +34,13 @@ const TYPES_STATS = [
   { cle: "sansType", couleur: "#6b7280" },
 ];
 
-// Ordre des cartes résumé à la première visite.
 const CARTES_DEFAUT = ["journalier", "termines", "evenement"];
 
-// Type transporté quand on glisse une carte, distinct de ceux de la Life Map :
-// une carte lâchée sur une colonne ne doit rien déclencher.
 const TYPE_CARTE = "application/x-carte";
 
-// L'ordre des cartes est une préférence d'affichage : localStorage, pas la base.
 const CLE_ORDRE = "lifemap:ordre-cartes";
 
-// On ne fait pas confiance au stockage relu : on garde les cartes connues, puis
-// on complète avec celles qui manquent (une carte ajoutée plus tard vient à la fin).
+// Lire ordre
 function lireOrdre() {
   try {
     const brut = JSON.parse(localStorage.getItem(CLE_ORDRE));
@@ -55,8 +51,7 @@ function lireOrdre() {
   }
 }
 
-// Au retour d'une connexion Google, la session peut se poser après le montage :
-// on attend l'évènement d'auth plutôt que de rediriger. `null` = non connecté.
+// Attendre utilisateur
 function attendreUtilisateur() {
   return new Promise((resolve) => {
     const { data: ecoute } = supabase.auth.onAuthStateChange((_e, session) => {
@@ -65,7 +60,6 @@ function attendreUtilisateur() {
         resolve(session.user);
       }
     });
-    // Filet : après 2 s sans session, on relit une dernière fois puis on tranche.
     setTimeout(async () => {
       ecoute.subscription.unsubscribe();
       const { data } = await supabase.auth.getSession();
@@ -74,27 +68,26 @@ function attendreUtilisateur() {
   });
 }
 
+// Page dashboard
 export default function Dashboard() {
   const { t, langue } = useLangue();
   const router = useRouter();
+  // États
   const [userId, setUserId] = useState(null);
   const [pseudo, setPseudo] = useState(null);
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [listes, setListes] = useState([]);
   const [objectifs, setObjectifs] = useState([]);
   const [completions, setCompletions] = useState([]);
-  // id → type de TOUS les objectifs (archivés compris) : le total « depuis le
-  // début » doit inclure l'historique des objectifs sortis du tableau.
   const [typesObjectifs, setTypesObjectifs] = useState([]);
   const [prochainEvenement, setProchainEvenement] = useState(null);
   const [ordreCartes, setOrdreCartes] = useState(CARTES_DEFAUT);
   const [chargement, setChargement] = useState(true);
-  // Un compte Google arrive sans pseudo (contrairement à l'inscription email) :
-  // on bloque sur cet écran tant qu'il n'en a pas choisi un.
   const [pseudoManquant, setPseudoManquant] = useState(false);
   const [enregistrementPseudo, setEnregistrementPseudo] = useState(false);
   const [assistantOuvert, setAssistantOuvert] = useState(false);
 
+  // Chargement
   useEffect(() => {
     async function charger() {
       const user = await attendreUtilisateur();
@@ -110,7 +103,6 @@ export default function Dashboard() {
         supabase.from("objectifs").select("*").eq("archive", false).order("position"),
         supabase.from("completions").select("objectif_id, periode, cree_le"),
         supabase.from("objectifs").select("id, type"),
-        // À venir OU encore en cours (commencé avant aujourd'hui, pas terminé).
         supabase
           .from("evenements")
           .select("*")
@@ -130,13 +122,13 @@ export default function Dashboard() {
       setCompletions(rc.data || []);
       setTypesObjectifs(rt.data || []);
       setProchainEvenement(rev.data?.[0] || null);
-      // Lu ici, pas dans le useState : localStorage n'existe pas au rendu serveur.
       setOrdreCartes(lireOrdre());
       setChargement(false);
     }
     charger();
   }, [router]);
 
+  // Choisir pseudo
   async function choisirPseudo(e) {
     e.preventDefault();
     const v = new FormData(e.target).get("pseudo").trim();
@@ -149,8 +141,7 @@ export default function Dashboard() {
     setEnregistrementPseudo(false);
   }
 
-  // Ici (plutôt que dans LifeMap) car le bouton de l'assistant IA vit à côté du
-  // « Bonjour » ; LifeMap la reçoit en props comme le reste de son état.
+  // Ajouter liste
   async function ajouterListe(titre) {
     const { data } = await supabase
       .from("listes")
@@ -158,11 +149,10 @@ export default function Dashboard() {
       .select()
       .single();
     if (data) setListes((l) => [...l, data]);
-    // Renvoyé pour l'assistant IA : il crée la liste puis y ajoute aussitôt les
-    // objectifs générés, avant que `listes` n'ait eu le temps de se mettre à jour.
     return data?.id;
   }
 
+  // Ajouter plusieurs objectifs
   async function ajouterPlusieursObjectifs(listeId, items) {
     const debut = objectifs.filter((o) => o.liste_id === listeId).length;
     const lignes = items.map((it, i) => ({
@@ -219,13 +209,12 @@ export default function Dashboard() {
     );
   }
 
-  // Règles de pluriel de la langue affichée (en français, 0 reste au singulier).
   const pluriel = new Intl.PluralRules(langue);
 
+  // Périodes de
   const periodesDe = (id) =>
     completions.filter((c) => c.objectif_id === id).map((c) => c.periode);
 
-  // ── Carte 1 : objectif journalier ──
   const quotidiens = objectifs.filter((o) => o.type === "quotidien");
   const faitsAujourdhui = quotidiens.filter((o) =>
     estFaitMaintenant("quotidien", periodesDe(o.id)),
@@ -235,17 +224,12 @@ export default function Dashboard() {
     ? Math.round((100 * faitsAujourdhui.length) / quotidiens.length)
     : 0;
 
-  // ── Carte 2 : objectifs terminés depuis le début, par type ──
-  // `typesObjectifs` (figé, couvre les archivés) fusionné avec `objectifs`
-  // (état vivant) : sinon un objectif tout juste créé ne serait pas compté.
   const typeParObjectif = new Map([
     ...typesObjectifs.map((o) => [o.id, o.type]),
     ...objectifs.map((o) => [o.id, o.type]),
   ]);
   const parType = { quotidien: 0, hebdomadaire: 0, mensuel: 0, unique: 0, sansType: 0 };
   completions.forEach((c) => {
-    // `has` avant `get` : un type NULL est un objectif sans étiquette, à compter ;
-    // un id inconnu est un objectif supprimé.
     if (!typeParObjectif.has(c.objectif_id)) return;
     const ty = typeParObjectif.get(c.objectif_id) ?? "sansType";
     if (ty in parType) parType[ty] += 1;
@@ -253,8 +237,7 @@ export default function Dashboard() {
   const totalTermines = TYPES_STATS.reduce((s, { cle }) => s + parType[cle], 0);
   const maxCategorie = Math.max(1, ...TYPES_STATS.map(({ cle }) => parType[cle]));
 
-  // ── Réordonner les cartes ── On déplace la carte glissée à la place de celle
-  // survolée, puis on enregistre (rien à écrire en base, à la différence des colonnes).
+  // Déplacer carte
   function deplacerCarte(cle, indexCible) {
     const ordre = [...ordreCartes];
     const depuis = ordre.indexOf(cle);
@@ -264,8 +247,6 @@ export default function Dashboard() {
     localStorage.setItem(CLE_ORDRE, JSON.stringify(ordre));
   }
 
-  // Contenu de chaque carte par clé (`ordreCartes` décide de l'ordre). `classe`
-  // = ce qui diffère d'une carte à l'autre ; l'habillage commun est écrit plus bas.
   const contenuCartes = {
     journalier: {
       classe: "flex flex-col",
@@ -286,7 +267,6 @@ export default function Dashboard() {
             </JaugeCirculaire>
           </div>
 
-          {/* Quotidiens faits aujourd'hui et restants ; singulier/pluriel selon la langue. */}
           <p className="text-center text-[10px] md:text-xs leading-tight tabular-nums">
             <span className="font-bold text-teal-500">{faitsAujourdhui.length}</span>{" "}
             <span className="text-gray-400">
@@ -333,12 +313,9 @@ export default function Dashboard() {
                   className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full shrink-0"
                   style={{ backgroundColor: couleur }}
                 />
-                {/* Largeur flexible : une largeur fixe débordait de la carte rétrécie. */}
                 <span className="text-[10px] md:text-sm text-gray-300 flex-1 min-w-0 truncate">
                   {t.dashboard.categories[cle]}
                 </span>
-                {/* Barre : largeur fixe (reste lisible), le libellé prend le reste.
-                    Masquée sur mobile, carte trop étroite. */}
                 <span className="hidden md:block w-12 shrink-0 h-2 rounded-full bg-white/5">
                   <span
                     className="block h-2 rounded-full"
@@ -368,7 +345,6 @@ export default function Dashboard() {
 
           {prochainEvenement ? (
             <div className="mt-1.5 md:mt-4 flex flex-col md:flex-row md:items-center gap-0.5 md:gap-3">
-              {/* Mobile : la date tient sur une ligne (le pavé coûtait un tiers de la hauteur). */}
               <div className="md:hidden text-[10px] font-bold uppercase text-teal-500 leading-tight">
                 {formatJourCourt(prochainEvenement.jour, langue)}{" "}
                 {Number(prochainEvenement.jour.slice(8, 10))}{" "}
@@ -421,6 +397,7 @@ export default function Dashboard() {
     },
   };
 
+  // Affichage
   return (
     <>
       <NavbarApp pseudo={pseudo} avatarUrl={avatarUrl} />
@@ -452,8 +429,6 @@ export default function Dashboard() {
           />
         )}
 
-        {/* Bandeau du haut : trois cartes résumé, réordonnables par glisser-déposer.
-            L'ordre est porté par la propriété CSS `order` ; le HTML ne bouge pas. */}
         <div className="mt-6 flex gap-4 overflow-x-auto md:overflow-visible pb-2 md:pb-0 md:items-stretch defilement-listes">
           {ordreCartes.map((cle, index) => (
             <section
@@ -470,7 +445,6 @@ export default function Dashboard() {
               title={t.dashboard.deplacerCarte}
               className={`group relative w-[40vw] shrink-0 md:w-auto md:flex-1 md:min-w-0 bg-gray-900/60 border border-gray-800 rounded-2xl p-2 md:p-3 pl-5 md:pl-6 cursor-grab active:cursor-grabbing ${contenuCartes[cle].classe}`}
             >
-              {/* Poignée de déplacement, révélée au survol (comme les colonnes). */}
               <span
                 aria-hidden="true"
                 className="absolute top-2 left-1.5 text-gray-600 group-hover:text-gray-400 transition"

@@ -16,6 +16,7 @@ export const metadata = {
     description: "Atteignez vos objectifs avec LifeMap",
 };
 
+// Composant RootLayout
 export default function RootLayout({ children }) {
     return (
         <html lang="fr" className={oswald.variable}>

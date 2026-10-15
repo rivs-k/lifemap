@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useLangue } from "./LangueProvider";
 import SelecteurLangue from "./SelecteurLangue";
 
+// Composant NavbarApp
 export default function NavbarApp({ pseudo, avatarUrl }) {
   const { t } = useLangue();
   const pathname = usePathname();
@@ -20,10 +21,10 @@ export default function NavbarApp({ pseudo, avatarUrl }) {
     actif: pathname === o.href || pathname.startsWith(`${o.href}/`),
   }));
 
+  // Affichage
   return (
     <header className="sticky top-0 z-20 bg-black/50 backdrop-blur-md border-b border-white/10">
       <div className="max-w-[120rem] mx-auto flex items-center justify-between gap-2 px-[19px] sm:px-6 md:px-[88px] py-4">
-        {/* Bascule FR/ENG + logo : seul moyen de changer de langue une fois connecté. */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <SelecteurLangue />
 
@@ -62,7 +63,7 @@ export default function NavbarApp({ pseudo, avatarUrl }) {
           >
             <span className="shrink-0">
               {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- image distante (Supabase Storage) : next/image imposerait de déclarer le domaine
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={avatarUrl}
                   alt=""

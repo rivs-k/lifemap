@@ -1,41 +1,32 @@
-// Périodes du tracker d'habitudes. Tout est calculé en date locale.
-// Clé de période : quotidien → le jour ; hebdomadaire → le lundi ouvrant la
-// semaine ; mensuel → le 1er du mois ; unique/null → le jour.
+// Vers clé
+const versCle = (d) => d.toLocaleDateString("sv-SE");
 
-function versCle(d) {
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const j = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${j}`;
-}
-
-// Lundi de la semaine contenant `d` (getDay : 0=dim … 6=sam).
+// Lundi de la semaine
 function lundiDeLaSemaine(d) {
   const decalage = (d.getDay() + 6) % 7;
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() - decalage);
 }
 
-// Un objectif « ponctuel » se coche une fois et reste coché.
-// C'est le cas d'`unique` et de l'absence de type.
+// Est ponctuel
 export function estPonctuel(type) {
   return type === "unique" || !type;
 }
 
-export function periodeCourante(type, date = new Date()) {
-  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+// Période courante
+export function periodeCourante(type) {
+  const date = new Date();
   switch (type) {
     case "hebdomadaire":
-      return versCle(lundiDeLaSemaine(d));
+      return versCle(lundiDeLaSemaine(date));
     case "mensuel":
-      return versCle(new Date(d.getFullYear(), d.getMonth(), 1));
-    case "quotidien":
-    case "unique":
+      return versCle(new Date(date.getFullYear(), date.getMonth(), 1));
     default:
-      return versCle(d);
+      return versCle(date);
   }
 }
 
-// L'objectif est-il validé pour la période courante ?
-export function estFaitMaintenant(type, periodes, aujourdhui = new Date()) {
+// Est fait maintenant
+export function estFaitMaintenant(type, periodes) {
   if (estPonctuel(type)) return periodes.length > 0;
-  return periodes.includes(periodeCourante(type, aujourdhui));
+  return periodes.includes(periodeCourante(type));
 }

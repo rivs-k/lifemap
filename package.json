@@ -7,8 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
-    "test": "node --test app/lib/*.test.js"
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",
@@ -23,7 +22,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.2",
-    "autoprefixer": "^10.5.3",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.2.10",
     "postcss": "^8.5.19",

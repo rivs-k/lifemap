@@ -19,3 +19,7 @@ npm-debug.log*
 
 # captures et traces Playwright
 .playwright-mcp/
+
+# documents de rendu
+*.pdf
+*.xlsx

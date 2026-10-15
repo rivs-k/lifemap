@@ -1,23 +1,24 @@
 # LifeMap
 
-Application de suivi d'objectifs personnels et de développement personnel — interface en français.
+Application web de développement personnel pour organiser, suivre et atteindre ses objectifs, avec un espace communautaire et un assistant IA. Interface disponible en français et en anglais.
 
 ## Écrans principaux
 
-- **Accueil** — page de présentation
-- **Inscription / Connexion** — création de compte et authentification (email/mot de passe, Google/Apple/Microsoft), critères de mot de passe affichés en direct
-- **Dashboard (Life Map)** — listes d'objectifs personnalisables (quotidien, hebdomadaire, mensuel, unique), suivi par validations
-- **Agenda** — vue calendrier mensuelle des événements et objectifs, résumé du jour, statistiques du mois
-- **Profil** — séries de jours d'affilée, statistiques (validations, meilleure série, objectifs actifs), archives des objectifs complétés
-- **Explorer** — objectifs communautaires que les utilisateurs rejoignent, avec votes et progression collective
+- **Accueil** : page de présentation de l'application
+- **Inscription / Connexion** : création de compte par email et mot de passe ou avec Google, critères du mot de passe vérifiés en direct, acceptation des CGU, mot de passe oublié
+- **Dashboard (Life Map)** : colonnes personnalisables par glisser-déposer, objectifs quotidiens, hebdomadaires, mensuels ou ponctuels, suivi par validations, prochain événement de l'agenda
+- **Assistant IA** : découpe un objectif large en sous-objectifs concrets grâce à Gemini
+- **Agenda** : calendrier mensuel, création et suppression d'événements (y compris sur plusieurs jours)
+- **Explorer** : objectifs communautaires à rejoindre, votes, nombre de participants et progression collective
+- **Profil** : photo de profil, statistiques (validations, objectifs actifs) et archives des objectifs
+- **Paramètres** : changement de mot de passe, export des données (RGPD) et suppression du compte
 
 ## Stack
 
-- [Next.js 16](https://nextjs.org/) (App Router) + React 19
-- [Tailwind CSS 4](https://tailwindcss.com/) (configuration en CSS, pas de `tailwind.config.js`)
-- JavaScript uniquement, pas de TypeScript
-- [Supabase](https://supabase.com/) (authentification + base de données, Row Level Security)
-- [Gemini API](https://aistudio.google.com/) pour l'assistant de décomposition d'objectifs
+- [Next.js 16](https://nextjs.org/) (App Router) et React 19, en JavaScript
+- [Tailwind CSS 4](https://tailwindcss.com/) (configuration en CSS, sans `tailwind.config.js`)
+- [Supabase](https://supabase.com/) : base de données PostgreSQL, authentification, stockage des photos et Row Level Security
+- [API Gemini](https://aistudio.google.com/) : assistant de décomposition d'objectifs, appelé depuis une route API côté serveur
 
 ## Démarrage
 
@@ -30,25 +31,20 @@ L'application est disponible sur [http://localhost:3000](http://localhost:3000).
 
 ### Variables d'environnement
 
-Copier `.env.example` vers `.env.local` et renseigner :
+Créer un fichier `.env.local` à la racine du projet avec :
 
-- `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — depuis Supabase (Project Settings > API)
-- `GEMINI_API_KEY` — depuis [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+GEMINI_API_KEY=
+```
 
-### Base de données
+- `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_ANON_KEY` : dans Supabase, Project Settings > API
+- `GEMINI_API_KEY` : clé de l'API Gemini, utilisée uniquement côté serveur
+- `GEMINI_MODELS` (facultatif) : liste de modèles Gemini séparés par des virgules, essayés dans l'ordre si le quota de l'un est atteint (par défaut `gemini-3.8-flash`, `gemini-3.6-flash` puis `gemini-3.5-flash-lite`)
 
-Le schéma SQL se trouve dans [`supabase/migrations/`](supabase/migrations/), à exécuter dans l'ordre via le SQL Editor de Supabase.
-
-## Commandes
-
-| Commande | Description |
-| --- | --- |
-| `npm run dev` | Serveur de développement |
-| `npm run build` | Build de production |
-| `npm run start` | Serveur de production |
-| `npm run lint` | ESLint |
-| `npm test` | Tests unitaires (séries) |
+Ce fichier contient des clés secrètes : il est exclu de Git et ne doit jamais être partagé.
 
 ## Internationalisation
 
-Bascule FR/EN par dictionnaire ([`app/dictionnaires.js`](app/dictionnaires.js)) sans changer l'URL.
+Bascule FR / EN instantanée grâce à un dictionnaire de traductions ([`app/dictionnaires.js`](app/dictionnaires.js)), sans changer l'URL.

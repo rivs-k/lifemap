@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useLangue } from "./LangueProvider";
 
-// Mêmes couleurs de type que la Life Map et la carte de statistiques.
+// Couleur type
 const COULEUR_TYPE = {
   quotidien: "#0d9488",
   hebdomadaire: "#9085e9",
@@ -13,9 +13,10 @@ const COULEUR_TYPE = {
 };
 const TYPES = ["quotidien", "hebdomadaire", "mensuel", "unique"];
 
-// En-tête de colonne cliquable. « ▾ » signale une colonne triable.
+// Composant EnteteTriable
 function EnteteTriable({ libelle, colonne, tri, onTrier, aligne = "left" }) {
   const actif = tri.colonne === colonne;
+  // Affichage
   return (
     <th className={`px-3 py-2 font-bold text-xs uppercase tracking-wide text-${aligne}`}>
       <button
@@ -34,12 +35,10 @@ function EnteteTriable({ libelle, colonne, tri, onTrier, aligne = "left" }) {
   );
 }
 
-// Page des objectifs communautaires : seule partie de l'app où l'on voit les
-// données des autres (lecture publique, écriture limitée à ses propres lignes).
-// Les chiffres collectifs viennent de la fonction SQL `stats_communautaires`,
-// car la sécurité de la base masque les lignes des autres.
+// Composant Explorer
 export default function Explorer({ userId, estAdmin }) {
   const { t } = useLangue();
+  // États
   const [objectifs, setObjectifs] = useState([]);
   const [stats, setStats] = useState({});
   const [mesParticipations, setMesParticipations] = useState(new Set());
@@ -49,9 +48,11 @@ export default function Explorer({ userId, estAdmin }) {
   const [formulaireOuvert, setFormulaireOuvert] = useState(false);
   const [chargement, setChargement] = useState(true);
 
+  // Indexer stats
   const indexerStats = (data) =>
     setStats(Object.fromEntries((data || []).map((s) => [s.objectif_id, s])));
 
+  // Chargement
   useEffect(() => {
     async function charger() {
       const [ro, rp, rl, rs] = await Promise.all([
@@ -64,7 +65,7 @@ export default function Explorer({ userId, estAdmin }) {
           .select("objectif_communautaire_id")
           .eq("user_id", userId),
         supabase.from("listes").select("id, titre, position").order("position"),
-        supabase.rpc("stats_communautaires"),
+        supabase.rpc("stats_communautaires"), // Appel fonction SQL
       ]);
 
       setObjectifs(ro.data || []);
@@ -76,16 +77,13 @@ export default function Explorer({ userId, estAdmin }) {
     charger();
   }, [userId]);
 
-  // Les agrégats dépendent de TOUS les participants : on les redemande à la base
-  // dès qu'on rejoint ou quitte un objectif.
+  // Rafraîchir stats
   async function rafraichirStats() {
     const { data } = await supabase.rpc("stats_communautaires");
     indexerStats(data);
   }
 
-  // Le vote est une bascule : revoter retire son vote. Le nombre de votes et
-  // « ai-je voté ? » viennent maintenant des stats (fonction SQL), donc après
-  // écriture on redemande simplement les agrégats à la base.
+  // Basculer vote
   async function basculerVote(oc) {
     if (stats[oc.id]?.a_vote) {
       await supabase
@@ -101,11 +99,8 @@ export default function Explorer({ userId, estAdmin }) {
     rafraichirStats();
   }
 
-  // Rejoindre = copier l'objectif dans SA Life Map, relié au communautaire. Ce
-  // lien permet de compter les validations collectives : on coche dans son
-  // tableau habituel et la progression du groupe monte.
+  // Rejoindre
   async function rejoindre(oc) {
-    // L'objectif atterrit dans une liste dédiée, créée au besoin.
     let liste = listes.find((l) => l.titre === t.explorer.listeRejoints);
     if (!liste) {
       const { data } = await supabase
@@ -139,14 +134,13 @@ export default function Explorer({ userId, estAdmin }) {
     rafraichirStats();
   }
 
+  // Quitter
   async function quitter(oc) {
     await supabase
       .from("participations")
       .delete()
       .eq("objectif_communautaire_id", oc.id)
       .eq("user_id", userId);
-    // On archive l'objectif personnel au lieu de le détruire : l'historique de
-    // validations est conservé, comme partout ailleurs.
     await supabase
       .from("objectifs")
       .update({ archive: true })
@@ -161,7 +155,7 @@ export default function Explorer({ userId, estAdmin }) {
     rafraichirStats();
   }
 
-  // `cree_par` retient l'auteur : lui seul pourra modifier ou supprimer.
+  // Proposer
   async function proposer(e) {
     e.preventDefault();
     const form = e.target;
@@ -186,16 +180,14 @@ export default function Explorer({ userId, estAdmin }) {
     rafraichirStats();
   }
 
-  // Modération admin : supprime l'objectif pour tout le monde. Autorisé côté base
-  // par une politique RLS réservée à l'email admin ; le bouton n'apparaît que pour lui.
+  // Supprimer
   async function supprimer(oc) {
     if (!window.confirm(t.explorer.supprimerConfirme)) return;
     await supabase.from("objectifs_communautaires").delete().eq("id", oc.id);
     setObjectifs((o) => o.filter((x) => x.id !== oc.id));
   }
 
-  // Recliquer la colonne triée inverse le sens ; sinon on change de colonne. Le
-  // sens par défaut : A→Z pour le type (texte), décroissant pour un chiffre.
+  // Trier par
   function trierPar(colonne) {
     setTri((t0) =>
       t0.colonne === colonne
@@ -204,7 +196,7 @@ export default function Explorer({ userId, estAdmin }) {
     );
   }
 
-  // La valeur sur laquelle comparer deux lignes, selon la colonne triée.
+  // Valeur tri
   function valeurTri(o) {
     const s = stats[o.id] || {};
     switch (tri.colonne) {
@@ -217,7 +209,6 @@ export default function Explorer({ userId, estAdmin }) {
     }
   }
 
-  // Lignes affichées : filtrées par la recherche (titre + description), puis triées.
   const terme = recherche.trim().toLowerCase();
   const lignes = objectifs
     .filter((o) =>
@@ -230,7 +221,7 @@ export default function Explorer({ userId, estAdmin }) {
       return tri.sens === "asc" ? cmp : -cmp;
     });
 
-  // Valeurs dérivées d'une ligne, partagées par le tableau (desktop) et les cartes (mobile).
+  // Calculs
   function calculs(oc) {
     const s = stats[oc.id] || {};
     const participants = Number(s.participants || 0);
@@ -251,9 +242,9 @@ export default function Explorer({ userId, estAdmin }) {
     return <p className="text-gray-400">{t.profil.chargement}</p>;
   }
 
+  // Affichage
   return (
     <div>
-      {/* Recherche + proposition */}
       <div className="flex flex-wrap items-center gap-3">
         <input
           type="search"
@@ -308,14 +299,12 @@ export default function Explorer({ userId, estAdmin }) {
         </form>
       )}
 
-      {/* Tableau */}
       {objectifs.length === 0 ? (
         <p className="mt-8 text-gray-400">{t.explorer.aucun}</p>
       ) : lignes.length === 0 ? (
         <p className="mt-8 text-gray-400">{t.explorer.aucunResultat}</p>
       ) : (
         <>
-        {/* Mobile : une carte par objectif (un tableau de 8 colonnes serait illisible sur téléphone). */}
         <ul className="md:hidden mt-6 flex flex-col gap-3">
           {lignes.map((oc) => {
             const c = calculs(oc);
@@ -405,7 +394,6 @@ export default function Explorer({ userId, estAdmin }) {
           })}
         </ul>
 
-        {/* Desktop : le tableau triable */}
         <div className="hidden md:block mt-6 overflow-x-auto defilement-listes">
           <table className="w-full min-w-[64rem] border-separate border-spacing-y-2">
             <thead>
@@ -453,7 +441,6 @@ export default function Explorer({ userId, estAdmin }) {
 
                 return (
                   <tr key={oc.id} className="bg-gray-900/60">
-                    {/* Votes */}
                     <td className="px-3 py-3 rounded-l-2xl border-y border-l border-gray-800 align-middle">
                       <button
                         type="button"
@@ -471,26 +458,22 @@ export default function Explorer({ userId, estAdmin }) {
                       </button>
                     </td>
 
-                    {/* Nom */}
                     <td className="px-3 py-3 border-y border-gray-800 align-middle">
                       <div className="flex items-center gap-2">
                         <span className="font-bold">{oc.titre}</span>
                       </div>
                     </td>
 
-                    {/* Description */}
                     <td className="px-3 py-3 border-y border-gray-800 align-middle max-w-64">
                       <span className="text-sm text-gray-400 line-clamp-2">{oc.description}</span>
                     </td>
 
-                    {/* Terminé */}
                     <td className="px-3 py-3 border-y border-gray-800 align-middle whitespace-nowrap">
                       <span className="text-sm tabular-nums">
                         {total.toLocaleString()} {t.explorer.fois}
                       </span>
                     </td>
 
-                    {/* Type */}
                     <td className="px-3 py-3 border-y border-gray-800 align-middle">
                       <span
                         className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded whitespace-nowrap"
@@ -500,7 +483,6 @@ export default function Explorer({ userId, estAdmin }) {
                       </span>
                     </td>
 
-                    {/* Progression */}
                     <td className="px-3 py-3 border-y border-gray-800 align-middle min-w-56">
                       <div className="h-5 rounded-full bg-white/5 overflow-hidden">
                         <div
@@ -515,14 +497,12 @@ export default function Explorer({ userId, estAdmin }) {
                       </div>
                     </td>
 
-                    {/* Participants */}
                     <td className="px-3 py-3 border-y border-gray-800 align-middle whitespace-nowrap">
                       <span className="text-sm tabular-nums">
                         <span aria-hidden="true">👤</span> {participants.toLocaleString()}
                       </span>
                     </td>
 
-                    {/* Action */}
                     <td className="px-3 py-3 rounded-r-2xl border-y border-r border-gray-800 align-middle">
                       <div className="flex items-center justify-end gap-2">
                         {estAdmin && (

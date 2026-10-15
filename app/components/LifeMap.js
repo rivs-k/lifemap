@@ -9,19 +9,17 @@ import { basculerCompletion } from "../lib/completions";
 import { COULEUR_TYPE } from "../lib/couleurs";
 import { parPosition } from "../lib/position";
 
-// Choix du menu déroulant, dans l'ordre. La chaîne vide = « sans type » (coché
-// une fois, sans remise à zéro ni série), en tête et sélectionné par défaut.
 const TYPES = ["", "quotidien", "hebdomadaire", "mensuel", "unique"];
 
-// Type transporté quand on glisse une colonne (pour la réordonner).
 const TYPE_LISTE = "application/x-liste";
 
-// Bouton « + Ajouter une liste » qui devient un champ au clic. Entrée ou
-// clic-ailleurs valide, Échap annule (comportement de Trello).
+// Composant AjoutListe
 function AjoutListe({ label, placeholder, onAjouter }) {
+  // États
   const [ouvert, setOuvert] = useState(false);
   const [valeur, setValeur] = useState("");
 
+  // Valider
   function valider() {
     const v = valeur.trim();
     if (v) onAjouter(v);
@@ -41,6 +39,7 @@ function AjoutListe({ label, placeholder, onAjouter }) {
     );
   }
 
+  // Affichage
   return (
     <input
       autoFocus
@@ -60,13 +59,14 @@ function AjoutListe({ label, placeholder, onAjouter }) {
   );
 }
 
-// Comme AjoutListe, avec en plus le menu déroulant du type. Pas de validation
-// au clic-ailleurs : ouvrir le menu ferait perdre le focus et annulerait.
+// Composant AjoutObjectif
 function AjoutObjectif({ t, onAjouter }) {
+  // États
   const [ouvert, setOuvert] = useState(false);
   const [nom, setNom] = useState("");
   const [type, setType] = useState("");
 
+  // Valider
   function valider() {
     const v = nom.trim();
     if (!v) return;
@@ -88,6 +88,7 @@ function AjoutObjectif({ t, onAjouter }) {
     );
   }
 
+  // Affichage
   return (
     <div className="flex flex-col gap-2">
       <input
@@ -126,9 +127,7 @@ function AjoutObjectif({ t, onAjouter }) {
   );
 }
 
-// Une ligne d'objectif : case à cocher, nom (renommable/repliable), étiquette
-// de type et archivage. Composant à part car il a son propre état
-// (nom replié ou non), qui ne concerne que cette ligne.
+// Composant LigneObjectif
 function LigneObjectif({
   objectif,
   liste,
@@ -139,6 +138,7 @@ function LigneObjectif({
 }) {
   const libelleType = objectif.type ? t.dashboard.categories[objectif.type] : null;
 
+  // Affichage
   return (
     <li className="group flex items-start gap-2">
       <button
@@ -164,8 +164,6 @@ function LigneObjectif({
         </span>
 
         <div className="mt-1 flex items-center gap-2">
-          {/* Pas d'étiquette pour un objectif sans type : « Sans type » serait
-              du bruit sur chaque ligne. */}
           {libelleType && (
             <span
               className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded shrink-0"
@@ -186,8 +184,6 @@ function LigneObjectif({
         </div>
       </div>
 
-      {/* Objectif validé : archiver devient l'action naturelle (icône, bouton
-          visible). Sinon on garde le × discret, révélé au survol. */}
       <button
         type="button"
         onClick={onArchiver}
@@ -203,9 +199,7 @@ function LigneObjectif({
   );
 }
 
-// Le tableau de listes (façon Trello) du dashboard. Les données vivent dans la
-// page dashboard, passées en props avec leurs setters : les cartes de stats et
-// le tableau lisent la même source et se mettent à jour ensemble.
+// Composant LifeMap
 export default function LifeMap({
   userId,
   listes,
@@ -217,31 +211,30 @@ export default function LifeMap({
   ajouterListe,
 }) {
   const { t } = useLangue();
-  const [survolee, setSurvolee] = useState(null); // liste survolée pendant un drag
-  const [erreur, setErreur] = useState(null); // échec d'une écriture en base
+  // États
+  const [survolee, setSurvolee] = useState(null);
+  const [erreur, setErreur] = useState(null);
 
-  // Lectures dans les props.
+  // Périodes de
   const periodesDe = (objectifId) =>
     completions.filter((c) => c.objectif_id === objectifId).map((c) => c.periode);
   const listesTriees = () => [...listes].sort(parPosition);
+  // Objectifs de
   const objectifsDe = (listeId) =>
     objectifs.filter((o) => o.liste_id === listeId).sort(parPosition);
 
-  // Écritures : chaque action met à jour la base ET l'état local, pour que
-  // l'interface réagisse sans attendre un rechargement.
-
+  // Supprimer liste
   async function supprimerListe(id) {
     await supabase.from("listes").delete().eq("id", id);
     setListes((l) => l.filter((x) => x.id !== id));
     setObjectifs((o) => o.filter((x) => x.liste_id !== id));
   }
 
+  // Ajouter objectif
   async function ajouterObjectif(listeId, nom, type) {
     setErreur(null);
     const { data, error } = await supabase
       .from("objectifs")
-      // `|| null` : le menu renvoie "" pour « sans type », que la base refuse ;
-      // elle accepte NULL.
       .insert({ user_id: userId, liste_id: listeId, nom, type: type || null, position: objectifsDe(listeId).length })
       .select()
       .single();
@@ -252,19 +245,17 @@ export default function LifeMap({
     setObjectifs((o) => [...o, data]);
   }
 
-
-  // Archiver ≠ supprimer : l'objectif sort du tableau mais reste en base avec
-  // son historique. On le retrouve dans l'archive du profil.
+  // Archiver objectif
   async function archiverObjectif(id) {
     await supabase.from("objectifs").update({ archive: true }).eq("id", id);
     setObjectifs((o) => o.filter((x) => x.id !== id));
   }
 
-  // Cocher / décocher : logique partagée avec le panneau « À faire ».
+  // Basculer
   const basculer = (objectif) =>
     basculerCompletion({ objectif, userId, completions, setCompletions });
 
-  // Réordonne les colonnes : recalcule leur position et l'enregistre en base.
+  // Déplacer liste
   async function deplacerListe(listeId, indexCible) {
     const ordre = listesTriees();
     const depuis = ordre.findIndex((l) => l.id === listeId);
@@ -281,6 +272,7 @@ export default function LifeMap({
     );
   }
 
+  // Affichage
   return (
     <section className="mt-8">
       <h2 className="font-bold text-xl mb-5">{t.dashboard.lifeMap}</h2>
@@ -294,9 +286,6 @@ export default function LifeMap({
         </p>
       )}
 
-      {/* Grille responsive : 1 colonne sur mobile, 2 sur tablette, 4 sur grand
-          écran. Les colonnes reviennent à la ligne, toute la page défile
-          verticalement. items-start : chaque colonne garde sa hauteur propre. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-start gap-4">
         {listesTriees().map((liste, indexListe) => (
           <div
@@ -309,7 +298,6 @@ export default function LifeMap({
             onDrop={(e) => {
               e.preventDefault();
               setSurvolee(null);
-              // Colonne déposée sur une autre : on réordonne les colonnes.
               const idListe = e.dataTransfer.getData(TYPE_LISTE);
               if (idListe) deplacerListe(idListe, indexListe);
             }}
@@ -317,9 +305,6 @@ export default function LifeMap({
               survolee === liste.id ? "border-teal-500" : "border-gray-800"
             }`}
           >
-            {/* En-tête de liste — sert aussi de poignée pour déplacer la
-                colonne. On ne rend pas toute la colonne glissable : ses
-                objectifs le sont déjà. */}
             <div
               draggable
               onDragStart={(e) => {
@@ -329,7 +314,6 @@ export default function LifeMap({
               title={t.dashboard.deplacerListe}
               className="group flex items-center gap-2 cursor-grab active:cursor-grabbing"
             >
-              {/* Poignée de déplacement, révélée au survol de l'en-tête. */}
               <span
                 aria-hidden="true"
                 className="shrink-0 -ml-1 text-gray-600 group-hover:text-gray-400 transition"
@@ -361,7 +345,6 @@ export default function LifeMap({
               </button>
             </div>
 
-            {/* Objectifs */}
             <ul className="flex flex-col gap-2">
               {objectifsDe(liste.id).map((objectif) => (
                 <LigneObjectif
@@ -380,7 +363,6 @@ export default function LifeMap({
           </div>
         ))}
 
-        {/* Colonne « ajouter une liste » */}
         <div className="w-full border border-dashed border-gray-700 rounded-2xl p-5 flex items-start justify-center">
           <AjoutListe
             label={t.dashboard.ajouterListe}

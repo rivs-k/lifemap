@@ -6,16 +6,14 @@ import { supabase } from "../lib/supabase";
 import { useLangue } from "./LangueProvider";
 import NavbarApp from "./NavbarApp";
 
-// Coquille commune aux pages connectées (Agenda, Explorer) : garde d'auth,
-// chargement des infos de la navbar (pseudo, avatar) et mise en page. Le
-// contenu est une fonction enfant recevant l'userId :
-//   <PageApp titre="…">{(userId) => …}</PageApp>
+// Composant PageApp
 export default function PageApp({ titre, children }) {
   const { t } = useLangue();
   const router = useRouter();
-  // `null` tant que rien n'est chargé — sert aussi d'indicateur de chargement.
+  // États
   const [donnees, setDonnees] = useState(null);
 
+  // Chargement
   useEffect(() => {
     async function charger() {
       const { data: { user } } = await supabase.auth.getUser();

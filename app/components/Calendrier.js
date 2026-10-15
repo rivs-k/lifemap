@@ -4,36 +4,38 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useLangue } from "./LangueProvider";
 
+// Clé
 function cle(d) {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const j = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${m}-${j}`;
 }
 
+// Depuis clé
 function depuisCle(k) {
   const [a, m, j] = k.split("-").map(Number);
   return new Date(a, m - 1, j);
 }
 
-// Semaine lundi→dimanche, cohérent avec le calcul des séries.
+// Lundi de la semaine
 function lundiDeLaSemaine(d) {
   const decalage = (d.getDay() + 6) % 7;
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() - decalage);
 }
 
-// Dernier jour couvert (le jour de début si l'événement tient sur une journée).
 const dernierJour = (ev) => ev.jour_fin || ev.jour;
 
-// Les clés étant au format ISO, comparer les chaînes revient à comparer les dates.
 const couvre = (ev, k) => ev.jour <= k && k <= dernierJour(ev);
 
 const surPlusieursJours = (ev) => Boolean(ev.jour_fin) && ev.jour_fin !== ev.jour;
 
+// Format plage
 function formatPlage(ev, langue) {
   const f = new Intl.DateTimeFormat(langue, { day: "numeric", month: "short" });
   return `${f.format(depuisCle(ev.jour))} → ${f.format(depuisCle(ev.jour_fin))}`;
 }
 
+// Format horaire
 function formatHoraire(ev, t) {
   if (!ev.heure_debut && !ev.heure_fin) return t.agenda.touteLaJournee;
   const debut = ev.heure_debut ? ev.heure_debut.slice(0, 5) : "";
@@ -41,33 +43,31 @@ function formatHoraire(ev, t) {
   return fin ? `${debut} - ${fin}` : debut;
 }
 
-// Couleur de pastille dérivée de l'id : stable et distincte d'un événement à
-// l'autre (elle ne porte pas de sens, elle sert juste à les différencier).
 const PALETTE_EV = ["#0d9488", "#9085e9", "#d55181", "#c98500", "#3b82f6"];
+// Couleur événement
 function couleurEvenement(ev) {
   const somme = [...ev.id].reduce((s, c) => s + c.charCodeAt(0), 0);
   return PALETTE_EV[somme % PALETTE_EV.length];
 }
 
+// Composant Calendrier
 export default function Calendrier({ userId }) {
   const { t, langue } = useLangue();
-  // null tant que le composant n'est pas monté : évite un décalage d'hydratation
-  // (le rendu serveur ne tomberait pas sur le même jour que le client).
+  // États
   const [mois, setMois] = useState(null);
   const [selection, setSelection] = useState(null);
   const [evenements, setEvenements] = useState([]);
   const [chargement, setChargement] = useState(true);
 
+  // Initialisation
   useEffect(() => {
-    // Initialisation après montage : la page est prérendue au build, donc une
-    // date calculée côté serveur serait fausse dans le navigateur.
     const n = new Date();
-    /* eslint-disable react-hooks/set-state-in-effect -- date disponible seulement côté client */
+    /* eslint-disable react-hooks/set-state-in-effect */
     setMois(new Date(n.getFullYear(), n.getMonth(), 1));
     setSelection(cle(n));
-    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
+  // Chargement
   useEffect(() => {
     if (!mois) return;
     let annule = false;
@@ -77,8 +77,6 @@ export default function Calendrier({ userId }) {
       const debut = new Date(mois.getFullYear(), mois.getMonth(), 1);
       const dernier = new Date(mois.getFullYear(), mois.getMonth() + 1, 0);
 
-      // Tout événement qui CHEVAUCHE le mois : il peut avoir commencé avant et
-      // se poursuivre dedans. Un simple intervalle sur `jour` les raterait.
       const re = await supabase
         .from("evenements")
         .select("*")
@@ -98,6 +96,7 @@ export default function Calendrier({ userId }) {
     };
   }, [mois]);
 
+  // Ajouter événement
   async function ajouterEvenement(e) {
     e.preventDefault();
     const form = e.target;
@@ -122,6 +121,7 @@ export default function Calendrier({ userId }) {
     form.reset();
   }
 
+  // Supprimer événement
   async function supprimerEvenement(id) {
     await supabase.from("evenements").delete().eq("id", id);
     setEvenements((ev) => ev.filter((x) => x.id !== id));
@@ -144,15 +144,14 @@ export default function Calendrier({ userId }) {
     month: "long",
     year: "numeric",
   }).format(premier);
-  // En-têtes des colonnes (Lun, Mar…), traduits dans le dictionnaire.
   const entetes = t.agenda.joursSemaine;
 
   const cleAujourdhui = cle(new Date());
   const evenementsDuJour = evenements.filter((e) => couvre(e, selection));
 
+  // Affichage
   return (
     <div>
-      {/* En-tête : navigation entre les mois */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <button
@@ -181,7 +180,6 @@ export default function Calendrier({ userId }) {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_20rem]">
-        {/* Grille du mois, semaine par semaine */}
         <div>
           <div className="grid grid-cols-7 gap-1 text-xs text-gray-500 mb-1">
             {entetes.map((e) => (
@@ -198,7 +196,6 @@ export default function Calendrier({ userId }) {
                   const k = cle(jour);
                   const dansLeMois = jour.getMonth() === mois.getMonth();
                   const estSelection = k === selection;
-                  // Une pastille par événement couvrant ce jour, chacune colorée.
                   const evsDuJour = evenements.filter((e) => couvre(e, k));
 
                   return (
@@ -246,7 +243,6 @@ export default function Calendrier({ userId }) {
           </div>
         </div>
 
-        {/* Panneau du jour sélectionné */}
         <aside className="bg-gray-900/60 border border-gray-800 rounded-2xl p-5">
           <h3 className="font-bold">
             {selection &&

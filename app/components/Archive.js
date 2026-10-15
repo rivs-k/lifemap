@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useLangue } from "./LangueProvider";
 
+// Composant LigneArchive
 function LigneArchive({ objectif, t, onRestaurer, onSupprimer }) {
+  // États
   const [confirme, setConfirme] = useState(false);
 
+  // Affichage
   return (
     <li className="flex flex-wrap items-center gap-3 bg-gray-900/60 border border-gray-800 rounded-xl p-3">
-      {objectif.emoji && <span aria-hidden="true">{objectif.emoji}</span>}
       <span className="flex-1 min-w-0 truncate">{objectif.nom}</span>
       {objectif.type && (
         <span className="text-xs text-gray-400 shrink-0">
@@ -41,12 +43,15 @@ function LigneArchive({ objectif, t, onRestaurer, onSupprimer }) {
   );
 }
 
+// Composant Archive
 export default function Archive() {
   const { t } = useLangue();
+  // États
   const [objectifs, setObjectifs] = useState([]);
   const [listes, setListes] = useState([]);
   const [chargement, setChargement] = useState(true);
 
+  // Chargement
   useEffect(() => {
     async function charger() {
       const [ro, rl] = await Promise.all([
@@ -64,8 +69,8 @@ export default function Archive() {
     charger();
   }, []);
 
+  // Restaurer
   async function restaurer(objectif) {
-    // Liste d'origine si existe encore, sinon première dispo
     const listeId = listes.some((l) => l.id === objectif.liste_id)
       ? objectif.liste_id
       : listes[0]?.id ?? null;
@@ -78,12 +83,13 @@ export default function Archive() {
     setObjectifs((o) => o.filter((x) => x.id !== objectif.id));
   }
 
+  // Supprimer
   async function supprimer(objectif) {
-    // Les completions liées partent en cascade (ON DELETE CASCADE).
     await supabase.from("objectifs").delete().eq("id", objectif.id);
     setObjectifs((o) => o.filter((x) => x.id !== objectif.id));
   }
 
+  // Affichage
   return (
     <section className="mt-12 text-left">
       <h2 className="font-bold text-lg">{t.profil.archive.titre}</h2>

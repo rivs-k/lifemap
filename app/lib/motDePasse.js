@@ -1,6 +1,4 @@
-// Critères de sécurité du mot de passe, partagés par l'inscription et la
-// réinitialisation. Couplés PAR POSITION aux libellés `inscription.criteres`
-// du dictionnaire : garder les deux listes dans le même ordre.
+// Tests critères
 export const TESTS_CRITERES = [
   (mdp) => mdp.length >= 8,
   (mdp) => /[A-Z]/.test(mdp),
@@ -9,6 +7,7 @@ export const TESTS_CRITERES = [
   (mdp) => /[^A-Za-z0-9]/.test(mdp),
 ];
 
+// Mot de passe valide
 export function motDePasseValide(mdp) {
   return TESTS_CRITERES.every((test) => test(mdp));
 }

@@ -5,15 +5,18 @@ import Image from "next/image";
 import { useLangue } from "./components/LangueProvider";
 import Footer from "./components/Footer";
 
+// Apercus
 const APERCUS = [
   { src: "/capture-explorer.jpg", alt: "captureExplorer", w: 2428, h: 985 },
   { src: "/capture-agenda.jpg", alt: "captureAgenda", w: 2413, h: 1180 },
   { src: "/capture-dashboard.jpg", alt: "captureDashboard", w: 2382, h: 1273 },
 ];
 
+// Page accueil
 export default function Home() {
   const { t } = useLangue();
 
+  // Affichage
   return (
     <>
       <main className="text-white">

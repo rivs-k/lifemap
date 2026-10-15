@@ -1,13 +1,14 @@
 "use client";
 import { useEffect, useRef } from "react";
 
-// Les particules défilent plus vite que les dunes (0.15) mais moins vite que le
-// contenu (1) : cet écart entre les couches donne la profondeur.
 const FACTEUR_PARALLAXE = 0.35;
 
+// Composant AnimatedBackground
 export default function AnimatedBackground() {
+  // Références
   const canvasRef = useRef(null);
 
+  // Redimensionnement
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -20,6 +21,7 @@ export default function AnimatedBackground() {
     }
     resize();
 
+    // Particules
     function createParticles() {
       const count = Math.floor((canvas.width * canvas.height) / 6000);
       particles = Array.from({ length: count }, () => ({
@@ -35,16 +37,17 @@ export default function AnimatedBackground() {
     }
     createParticles();
 
+    // Redimensionnement
     function handleResize() {
       resize();
       createParticles();
     }
     window.addEventListener("resize", handleResize);
 
+    // Animation
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Lu une fois par frame, pas une fois par particule.
       const decalage = window.scrollY * FACTEUR_PARALLAXE;
 
       particles.forEach((p) => {
@@ -59,8 +62,6 @@ export default function AnimatedBackground() {
         p.opacity += p.twinkleSpeed * p.twinkleDir;
         if (p.opacity > 0.8 || p.opacity < 0.15) p.twinkleDir *= -1;
 
-        // Position ramenée dans l'écran : sans ce repli, les particules
-        // sortiraient du canvas et le fond se viderait en bas de page.
         let y = (p.y - decalage) % canvas.height;
         if (y < 0) y += canvas.height;
 

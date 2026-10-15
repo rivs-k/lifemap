@@ -1,5 +1,4 @@
-// Icône « archiver » : dossier ouvert, au trait. En SVG (pas emoji) pour hériter
-// de la couleur du texte et rester net à toute taille.
+// Composant IconeDossier
 export default function IconeDossier({ className = "w-[18px] h-[18px]" }) {
   return (
     <svg
@@ -12,9 +11,7 @@ export default function IconeDossier({ className = "w-[18px] h-[18px]" }) {
       className={className}
       aria-hidden="true"
     >
-      {/* Dossier arrière, avec son onglet */}
       <path d="M4 19V6.5A1.5 1.5 0 0 1 5.5 5h3.6a1.5 1.5 0 0 1 1.2.6l.9 1.2h7.3A1.5 1.5 0 0 1 20 8.3v2.2" />
-      {/* Rabat avant, ouvert */}
       <path d="M3.3 18.6 5.5 12a1.5 1.5 0 0 1 1.4-1h13.4a1.5 1.5 0 0 1 1.45 1.9l-1.8 6.2a1.5 1.5 0 0 1-1.45 1.1H4.8a1.5 1.5 0 0 1-1.5-1.6z" />
     </svg>
   );

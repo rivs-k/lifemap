@@ -1,10 +1,7 @@
 import { supabase } from "./supabase";
-import { periodeCourante, estFaitMaintenant } from "./periodes";
+import { periodeCourante, estFaitMaintenant, estPonctuel } from "./periodes";
 
-// Coche / décoche un objectif pour sa période en cours. Partagé par la Life Map
-// et le panneau « À faire aujourd'hui » pour garder les compteurs cohérents.
-// Il n'y a pas de booléen « fait » en base : la présence de la ligne fait foi,
-// ce qui rend la remise à zéro (minuit, lundi, 1er du mois) automatique.
+// Basculer completion
 export async function basculerCompletion({ objectif, userId, completions, setCompletions }) {
   const periode = periodeCourante(objectif.type);
   const periodes = completions
@@ -12,13 +9,15 @@ export async function basculerCompletion({ objectif, userId, completions, setCom
     .map((c) => c.periode);
 
   if (estFaitMaintenant(objectif.type, periodes)) {
+    // Ponctuel : toutes ses validations / récurrent : celle de la période en cours
+    const aSupprimer = estPonctuel(objectif.type) ? periodes : [periode];
     await supabase
       .from("completions")
       .delete()
       .eq("objectif_id", objectif.id)
-      .eq("periode", periode);
+      .in("periode", aSupprimer);
     setCompletions((c) =>
-      c.filter((x) => !(x.objectif_id === objectif.id && x.periode === periode)),
+      c.filter((x) => !(x.objectif_id === objectif.id && aSupprimer.includes(x.periode))),
     );
   } else {
     const { data } = await supabase

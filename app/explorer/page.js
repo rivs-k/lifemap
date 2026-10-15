@@ -4,6 +4,7 @@ import PageApp from "../components/PageApp";
 import Explorer from "../components/Explorer";
 import { useLangue } from "../components/LangueProvider";
 
+// Page explorer
 export default function PageExplorer() {
   const { t } = useLangue();
   return (
