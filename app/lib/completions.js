@@ -20,11 +20,8 @@ export async function basculerCompletion({ objectif, userId, completions, setCom
       c.filter((x) => !(x.objectif_id === objectif.id && aSupprimer.includes(x.periode))),
     );
   } else {
-    const { data } = await supabase
-      .from("completions")
-      .insert({ user_id: userId, objectif_id: objectif.id, periode })
-      .select("objectif_id, periode, cree_le")
-      .single();
-    if (data) setCompletions((c) => [...c, data]);
+    const ligne = { objectif_id: objectif.id, periode };
+    await supabase.from("completions").insert({ ...ligne, user_id: userId });
+    setCompletions((c) => [...c, ligne]);
   }
 }

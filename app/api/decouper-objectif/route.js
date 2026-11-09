@@ -43,11 +43,9 @@ export async function POST(request) {
   // Modèles
   const modeles = (process.env.GEMINI_MODELS || "gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash-lite")
     .split(",")
-    .map((m) => m.trim())
-    .filter(Boolean);
+    .map((m) => m.trim());
 
   // Appel Gemini
-  let texteReponse;
   let derniereErreur;
   // On essaie les modèles un par un jusqu'à ce que l'un réponde
   for (const modele of modeles) {
@@ -66,8 +64,7 @@ export async function POST(request) {
           responseJsonSchema: SCHEMA,
         },
       });
-      texteReponse = reponse.text;
-      break;
+      return NextResponse.json(JSON.parse(reponse.text));
     } catch (e) {
       derniereErreur = e;
       console.error(`[Gemini] échec avec ${modele} :`, e?.status, e?.message);
@@ -78,18 +75,8 @@ export async function POST(request) {
     }
   }
 
-  // Erreurs
-  if (!texteReponse) {
-    const e = derniereErreur;
-    if (e?.status === 429) return NextResponse.json({ erreur: "quota_atteint" }, { status: 429 });
-    if (e?.status === 503) return NextResponse.json({ erreur: "ia_surchargee" }, { status: 503 });
-    return NextResponse.json({ erreur: "reponse_invalide" }, { status: 502 });
-  }
-
-  // Réponse
-  try {
-    return NextResponse.json(JSON.parse(texteReponse));
-  } catch {
-    return NextResponse.json({ erreur: "reponse_invalide" }, { status: 502 });
-  }
+  // Erreurs : aucun modèle n'a répondu
+  if (derniereErreur?.status === 429) return NextResponse.json({ erreur: "quota_atteint" }, { status: 429 });
+  if (derniereErreur?.status === 503) return NextResponse.json({ erreur: "ia_surchargee" }, { status: 503 });
+  return NextResponse.json({ erreur: "reponse_invalide" }, { status: 502 });
 }

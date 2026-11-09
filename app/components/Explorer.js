@@ -183,8 +183,13 @@ export default function Explorer({ userId, estAdmin }) {
   // Supprimer
   async function supprimer(oc) {
     if (!window.confirm(t.explorer.supprimerConfirme)) return;
-    await supabase.from("objectifs_communautaires").delete().eq("id", oc.id);
-    setObjectifs((o) => o.filter((x) => x.id !== oc.id));
+    const { data } = await supabase
+      .from("objectifs_communautaires")
+      .delete()
+      .eq("id", oc.id)
+      .select("id");
+    // Rien supprimé (refusé par le RLS) : on ne retire pas la carte
+    if (data?.length) setObjectifs((o) => o.filter((x) => x.id !== oc.id));
   }
 
   // Trier par
@@ -367,7 +372,7 @@ export default function Explorer({ userId, estAdmin }) {
                     {c.total.toLocaleString()} {t.explorer.fois}
                   </span>
                   <div className="flex items-center gap-2">
-                    {estAdmin && (
+                    {(estAdmin || oc.cree_par === userId) && (
                       <button
                         type="button"
                         onClick={() => supprimer(oc)}
@@ -505,7 +510,7 @@ export default function Explorer({ userId, estAdmin }) {
 
                     <td className="px-3 py-3 rounded-r-2xl border-y border-r border-gray-800 align-middle">
                       <div className="flex items-center justify-end gap-2">
-                        {estAdmin && (
+                        {(estAdmin || oc.cree_par === userId) && (
                           <button
                             type="button"
                             onClick={() => supprimer(oc)}

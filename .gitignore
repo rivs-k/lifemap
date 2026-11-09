@@ -23,3 +23,6 @@ npm-debug.log*
 # documents de rendu
 *.pdf
 *.xlsx
+
+# documents de la soutenance (dossier, slides, images) : pas dans le dépôt
+/_soutenance/

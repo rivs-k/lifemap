@@ -15,7 +15,7 @@ export default function SelecteurLangue() {
     >
       <span className={langue === "fr" ? "text-teal-500" : "text-gray-500"}>FR</span>
       <span aria-hidden="true" className="text-gray-700">|</span>
-      <span className={langue === "en" ? "text-teal-500" : "text-gray-500"}>ENG</span>
+      <span className={langue === "en" ? "text-teal-500" : "text-gray-500"}>EN</span>
     </button>
   );
 }

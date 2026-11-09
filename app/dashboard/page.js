@@ -101,7 +101,7 @@ export default function Dashboard() {
         supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
         supabase.from("listes").select("*").order("position"),
         supabase.from("objectifs").select("*").eq("archive", false).order("position"),
-        supabase.from("completions").select("objectif_id, periode, cree_le"),
+        supabase.from("completions").select("objectif_id, periode"),
         supabase.from("objectifs").select("id, type"),
         supabase
           .from("evenements")
